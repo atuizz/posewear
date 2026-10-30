@@ -15,3 +15,6 @@ tests/screenshots/
 *.zip
 *.tar.gz
 .DS_Store
+indexnow.key
+urls.txt
+.indexnow-state.json

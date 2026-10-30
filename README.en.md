@@ -98,6 +98,16 @@ Issues and PRs are welcome. Run `python3 build.py` and both test files before yo
 
 [AI Pose Gallery](https://ai-pose-gallery.pages.dev/) · [AI Costume Gallery](https://ai-costume-gallery.pages.dev/) by [@giaaibusi](https://x.com/giaaibusi) · [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/) by [@agi_aibusi](https://x.com/agi_aibusi) (CC0) · [wzc520pyfm/gen-ai-pose-image](https://github.com/wzc520pyfm/gen-ai-pose-image) · [paipiange/nvzhuang](https://github.com/paipiange/nvzhuang)
 
-## License
+## License and asset boundaries
 
-The code is released under the [MIT](LICENSE) license. The license does not cover images or data downloaded by `fetch-assets.py`; those belong to their authors.
+| What | In this repo? | License |
+|---|---|---|
+| Code, UI copy, build scripts | Yes | [MIT](LICENSE) |
+| Pose and outfit images and data | No — downloaded by `fetch-assets.py` | Owned by [@giaaibusi](https://x.com/giaaibusi) ([AI Pose Gallery](https://ai-pose-gallery.pages.dev/) / [AI Costume Gallery](https://ai-costume-gallery.pages.dev/)); no open license is stated |
+| Portrait images | No — same as above | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) by [@agi_aibusi](https://x.com/agi_aibusi) ([AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/)) |
+| README screenshots | Yes | The pictures shown belong to their authors as above |
+
+- MIT covers the code only, not any image or data.
+- To repost, use commercially or redistribute pose/outfit images, ask the author @giaaibusi first and follow the source site's terms.
+- Portraits are CC0: free to use, modify and sell without credit. They are AI-generated fictional people — don't use them to impersonate real people. The author asks that they not be bulk-reposted as-is.
+- If you deploy your own copy, keep the source and author credits on the pages.

@@ -178,6 +178,16 @@ Key 只存在你浏览器的 localStorage 里，可在设置里清除。默认�
 - [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/)：人像，作者 [@agi_aibusi](https://x.com/agi_aibusi)，CC0
 - [wzc520pyfm/gen-ai-pose-image](https://github.com/wzc520pyfm/gen-ai-pose-image)、[paipiange/nvzhuang](https://github.com/paipiange/nvzhuang)：给了很多思路的同类项目
 
-## 许可
+## 许可与素材边界
 
-代码以 [MIT](LICENSE) 协议开源。许可不包括通过 `fetch-assets.py` 下载的任何图片和数据，这些归原作者所有；README 截图中的素材同样如此。
+| 内容 | 是否在本仓库 | 许可 |
+|---|---|---|
+| 代码、页面文案、构建脚本 | 是 | [MIT](LICENSE) |
+| 姿势、服装图片和原始数据 | 否，由 `fetch-assets.py` 从原站下载 | 归原作者 [@giaaibusi](https://x.com/giaaibusi) 所有（[AI Pose Gallery](https://ai-pose-gallery.pages.dev/) / [AI Costume Gallery](https://ai-costume-gallery.pages.dev/)），原站未标明开放许可 |
+| 人像图片 | 否，同上 | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.zh-hans)，作者 [@agi_aibusi](https://x.com/agi_aibusi)（[AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/)） |
+| README 截图 | 是 | 截图里的图片素材同上，归各自作者 |
+
+- MIT 只覆盖代码，不覆盖任何图片和数据。
+- 想转载、商用或二次分发姿势、服装图片，请先联系原作者 @giaaibusi，以原站说明为准。
+- 人像为 CC0，可商用、可修改、无需署名；均为 AI 生成的虚构人物，不要用来冒充真人。原作者希望不要原样批量转载。
+- 自己部署时，请保留页面里的来源与作者说明。

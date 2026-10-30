@@ -72,19 +72,6 @@ def page(kind,it,rel):
 <a class="go" href="/#{kind}/{it['id']}">在衣姿中打开</a><a class="go" style="background:#111" href="/#studio">去试穿</a></div>
 <section class="rel"><h2>同类{'姿势' if P else '穿搭' if kind=='costume' else '人像'}</h2><ul>{rl}</ul></section></main>
 <footer>{'图片来自 AI Portrait Gallery（作者 @agi_aibusi，CC0 1.0），AI 生成的虚构人物。' if kind=='portrait' else '图片来自 AI Pose Gallery / AI Costume Gallery（原作者 @giaaibusi）'}，中文描述由本站整理。<a href="/">返回首页</a></footer></body></html>'''
-URLS=[SITE+'/']
-for kind,L in [('pose',[p for p in PL if not p.get('a')]),('costume',[c for c in cos if not c.get('a')]),('portrait',pors)]:
-  for i,it in enumerate(L):
-    ck=lambda x:x.get('cat') or (x['len'],x['st'] or x['sec'])
-    same=[x for x in L if ck(x)==ck(it) and x['id']!=it['id']]
-    j=same.index(next(x for x in same))if same else 0
-    k=[x for x in L if x['id']==it['id']]
-    idx_=[x['id'] for x in same];pos=sum(1 for x in L[:i] if ck(x)==ck(it))
-    rel=(same[pos:]+same[:pos])[:8]
-    os.makedirs(f"{D}/{kind}/{it['id']}",exist_ok=True)
-    open(f"{D}/{kind}/{it['id']}/index.html",'w').write(page(kind,it,rel));URLS.append(f"{SITE}/{kind}/{it['id']}/")
-open(f'{D}/sitemap.xml','w').write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'+''.join(f'<url><loc>{u}</loc></url>\n' for u in URLS)+'</urlset>\n')
-open(f'{D}/robots.txt','w').write(f'User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /o/\n\nSitemap: {SITE}/sitemap.xml\n')
 open(f'{D}/404.html','w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>页面不存在 | 衣姿 PoseWear</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>{CSS}
 .nf{{max-width:480px;margin:12vh auto;text-align:center;padding:0 20px}}.nf b{{font-size:64px;color:#d81b3a;display:block;line-height:1}}</style></head><body><header><a href="/">{LOGO}衣姿 PoseWear</a></header>
 <div class="nf"><b>404</b><h1>这个页面不存在</h1><p class="mu">链接可能写错了，或者内容已经调整。</p><a class="go" href="/">回到首页</a><a class="go" style="background:#111" href="/#costume">看看服装库</a></div></body></html>''')
@@ -122,4 +109,4 @@ open(f'{D}/_headers','w').write(f'''/*
 /portrait/*
   Cache-Control: public, max-age=600
 ''')
-print('assets',A,'pages',len(URLS)-1)
+exec(open('seo.py').read())
