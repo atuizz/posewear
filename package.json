@@ -1,0 +1,16 @@
+{
+  "name": "posewear",
+  "private": true,
+  "description": "衣姿 PoseWear：姿势、服装、人像参考图库与 AI 试穿工作台",
+  "license": "MIT",
+  "scripts": {
+    "build": "python3 build.py",
+    "serve": "python3 -m http.server 8787 -d dist",
+    "test": "node tests/v12.js && node tests/v13.js",
+    "deploy": "wrangler pages deploy dist --project-name posewear"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0",
+    "wrangler": "^4.0.0"
+  }
+}

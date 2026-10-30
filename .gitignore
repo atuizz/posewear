@@ -1,0 +1,17 @@
+# 构建产物与素材（素材不随仓库分发，见 scripts/fetch-assets.py）
+dist/
+assets-raw/
+raw/
+# 依赖与本地状态
+node_modules/
+.wrangler/
+.dev.vars
+.env*
+__pycache__/
+*.pyc
+# 测试输出
+tests/screenshots/
+*.log
+*.zip
+*.tar.gz
+.DS_Store
