@@ -20,7 +20,7 @@ RLEN={'短发':('short-hair','Short hair'),'中长发':('medium-hair','Medium ha
 COLS={'黑':'black','白':'white','红':'red','粉':'pink','蓝':'blue','藏青':'navy','棕':'brown','米':'beige','象牙白':'ivory','灰':'grey','绿':'green','黄':'yellow','紫':'purple','金':'gold','银':'silver','卡其':'khaki','酒红':'burgundy','橙':'orange','奶油':'cream','薄荷':'mint','薰衣草':'lavender','橄榄':'olive'}
 ITEMK={'连衣裙':'dress','半身裙':'skirt','短裤':'shorts','长裤':'trousers','牛仔裤':'jeans','大衣':'coat','夹克':'jacket','开衫':'cardigan','衬衫':'blouse','毛衣':'sweater','吊带':'camisole','泳衣':'swimsuit','靴子':'boots','高跟鞋':'high heels','运动鞋':'sneakers','凉鞋':'sandals','连裤袜':'tights','长筒袜':'stockings'}
 cz=lambda k:k if k.endswith('白') else k+'色'
-SP=[p for p in PL if not p.get('a')];SC=[c for c in cos if not c.get('a')];SR=pors
+NA=sum(len(p['angles']) for p in poses.values());SP=[p for p in PL if not p.get('a')];NA_PUB=sum(len(p['angles']) for p in SP);SC=[c for c in cos if not c.get('a')];SR=pors
 def ctags(c):
   w=' '+c['kw']+' ';e=' '+c['en'].replace(',',' ')+' '
   return [('item',z,ITEMK[z]) for z in ITEMK if ' '+ITEMK[z]+' ' in e]+[('col',z,COLS[z]) for z in COLS if ' '+COLS[z]+' ' in w]
@@ -67,7 +67,7 @@ def shell(lang,path,title,desc,body,ld,en=True,og=None,ogt='website'):
     '图片来自 AI Pose Gallery / AI Costume Gallery（原作者 @giaaibusi）与 AI Portrait Gallery（@agi_aibusi，CC0 1.0），均为 AI 生成图，中文描述由本站整理。<a href="/">返回首页</a>')
   return f'''<!doctype html><html lang="{'en' if lang=='en' else 'zh-CN'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{E(title)}</title><meta name="description" content="{E(desc[:160])}"><link rel="canonical" href="{url(lang,path)}">{alts(path) if en else ''}
-<meta property="og:type" content="{ogt}"><meta property="og:site_name" content="衣姿 PoseWear"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc[:160])}"><meta property="og:image" content="{SITE}/{og or 'og.png'}"><meta property="og:url" content="{url(lang,path)}"><meta property="og:locale" content="{'en_US' if lang=='en' else 'zh_CN'}"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:type" content="{ogt}"><meta property="og:site_name" content="衣姿 PoseWear"><meta property="og:title" content="{E(title)}"><meta property="og:description" content="{E(desc[:160])}"><meta property="og:image" content="{SITE}/{og or 'og.png'}"><meta property="og:url" content="{url(lang,path)}"><meta property="og:locale" content="{'en_US' if lang=='en' else 'zh_CN'}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:description" content="{E(desc[:160])}">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>{CSS2}</style>
 <script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":ld},ensure_ascii=False,separators=(',',':'))}</script></head><body>
 <header><a href="{P}/">{LOGO}衣姿 PoseWear</a>{nav}</header>
@@ -193,7 +193,7 @@ for lang in ['zh','en']:
 # ---- 英文首页 ----
 def featured(lang,n=12):return ''.join(cardli(lang,'costume',c) for c in SC[:n])
 catlinks=lambda lang:''.join(f'<li><a href="{"/en" if lang=="en" else ""}/{k}/{s}/">{E(z if lang=="zh" else e)}</a></li>' for k in ['pose','costume'] for s,z,e,L in CATS[k])
-en_desc=f"PoseWear: {len(SP)} pose references with multiple camera angles, {len(SC)} outfit references and {len(SR)} CC0 portrait face references, all with English and Chinese prompts — plus online AI try-on."
+en_desc=f"PoseWear: {len(SP)} pose sets ({NA_PUB} angle images), {len(SC):,} outfits and {len(SR):,} CC0 portraits, all with English and Chinese prompts — plus online AI try-on."
 ENLD=[{"@type":"WebSite","@id":SITE+'/en/#website',"url":SITE+'/en/',"name":"PoseWear","alternateName":"衣姿 PoseWear","inLanguage":"en","description":en_desc,"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"PoseWear","url":SITE+'/en/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":en_desc}]
 body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts</h1><p class="lead">{E(en_desc)} Favourite and combine references, copy prompts for Stable Diffusion or Midjourney, or upload your own photo to try an outfit on.</p>
@@ -205,24 +205,24 @@ body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts
 W('/en/',shell('en','/','PoseWear – Pose & Outfit Reference Library with AI Prompts and Online Try-On',en_desc,body,ENLD))
 add('pages','/',TODAY)
 # ---- 中文首页：标题、描述、真实数字、前 N 项静态卡片、JSON-LD、hreflang ----
-NA=sum(len(p['angles']) for p in poses.values());NA_PUB=sum(len(p['angles']) for p in SP)
-HC=dict(pose=len(poses),ang=NA,cos=len(cos),por=len(pors))  # 首页计数唯一来源；改公开数：HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR))
-zh_desc=f"衣姿 PoseWear：{HC['pose']} 个姿势（{HC['ang']} 张多角度图）、{HC['cos']} 套服装、{HC['por']} 张人像参考图，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
+HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR));HA=dict(pose=len(poses),ang=NA,cos=len(cos),por=len(pors))  # 首页计数唯一来源；改公开数：HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR))
+zh_desc=f"衣姿 PoseWear：{HC['pose']} 组姿势（{HC['ang']:,} 张角度图）、{HC['cos']:,} 套服装、{HC['por']:,} 张人像参考图，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
 zhttl='衣姿 PoseWear · 姿势、服装、人像参考图库 | 中英文提示词 + 在线 AI 试穿'
 idx=open(f'{D}/index.html').read()
 idx=re.sub(r'<title>.*?</title>',f'<title>{zhttl}</title>',idx,1)
 idx=re.sub(r'<meta name="description" content="[^"]*">',f'<meta name="description" content="{E(zh_desc)}">',idx,1)
 idx=re.sub(r'<meta property="og:title" content="[^"]*">','<meta property="og:title" content="衣姿 PoseWear：姿势、服装、人像参考图库">',idx,1)
 idx=re.sub(r'<meta property="og:description" content="[^"]*">',f'<meta property="og:description" content="{E(zh_desc)}">',idx,1)
+idx=idx.replace('<meta name="twitter:card" content="summary_large_image">',f'<meta name="twitter:card" content="summary_large_image"><meta name="twitter:description" content="{E(zh_desc)}">',1)
 idx=idx.replace('<link rel="canonical" href="https://posewear.pages.dev/">','<link rel="canonical" href="https://posewear.pages.dev/">'+alts('/'))
 LD=[{"@type":"WebSite","@id":SITE+'/#website',"url":SITE+'/',"name":"衣姿 PoseWear","alternateName":["PoseWear","衣姿"],"inLanguage":"zh-CN","description":zh_desc,
   "potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"衣姿 PoseWear","url":SITE+'/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],
   "offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"description":zh_desc,"image":SITE+'/og.png',"isAccessibleForFree":True,"featureList":["姿势参考图（多角度）","服装穿搭参考图","人像脸模参考（CC0）","中英文提示词","在线 AI 试穿"]}]
 idx=idx.replace('</head>',f'<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":LD},ensure_ascii=False,separators=(",",":"))}</script></head>',1)
-HOME_COUNTS=[('288',HC['pose']),('1439',HC['ang']),('1407',HC['cos'])]
-for a,b in HOME_COUNTS:
-  idx=idx.replace(f'<b data-n="{a}">0</b>',f'<b data-n="{b}">{b:,}</b>')
+HOME_COUNTS=[('288','pose'),('1439','ang'),('1407','cos'),('1499','por')]
+for a,k in HOME_COUNTS:
+  idx=idx.replace(f'<b data-n="{a}">0</b>',f'<b data-n="{HC[k]}" data-na="{HA[k]}">{HC[k]:,}</b>')
 def ssr(p):
   t=p['zh'];a=p['angles'];return (f'<article class="card ssr"><div class="ph pose done"><a href="/pose/{p["id"]}/" class="ssl"><img class="ld" src="/{a[0]["t"]}" alt="{E(t)}" width="300" height="400" decoding="async"{"" if SP.index(p)<4 else " loading=\"lazy\""}></a><span class="badge">{p["no"]}</span></div>'
     f'<div class="info"><h3><a href="/pose/{p["id"]}/">{E(t)}</a></h3><div class="sub">{E(p["cat"])} · {len(a)} 个角度</div><div class="tags"><span class="tag">{E(p["line"])}</span><span class="tag c">{E(p["cat"])}</span></div></div></article>')
