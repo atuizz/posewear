@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="docs/banner.jpg" alt="Portrait + pose + outfit = result" width="900">
+
+<sub>The result is an AI-generated example using a portrait, pose and outfit from the galleries as references. Source images belong to their authors; see Acknowledgements.</sub>
+
 <img src="docs/logo.svg" width="72" alt="PoseWear">
 
 # PoseWear 衣姿

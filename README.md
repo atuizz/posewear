@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="docs/banner.jpg" alt="人像 + 姿势 + 服饰 = 成品" width="900">
+
+<sub>成品为用站内人像、姿势、服装作参考的 AI 生成示例；素材版权归原作者，见<a href="#致谢">致谢</a>。</sub>
+
 <img src="docs/logo.svg" width="72" alt="衣姿 PoseWear">
 
 # 衣姿 PoseWear
