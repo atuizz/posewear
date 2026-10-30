@@ -57,7 +57,7 @@ def url(lang,path): return SITE+('/en' if lang=='en' else '')+path
 def alts(path,en=True):
   if not en: return f'<link rel="canonical" href="{url("zh",path)}">'
   return f'<link rel="alternate" hreflang="zh-CN" href="{url("zh",path)}"><link rel="alternate" hreflang="en" href="{url("en",path)}"><link rel="alternate" hreflang="x-default" href="{url("zh",path)}">'
-def crumbs_ld(lang,cr): return {"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":i+1,"name":n,**({"item":SITE+u} if u else {})} for i,(n,u) in enumerate(cr)]}
+def crumbs_ld(lang,cr,bid=None): return {"@type":"BreadcrumbList",**({"@id":bid} if bid else {}),"itemListElement":[{"@type":"ListItem","position":i+1,"name":n,**({"item":SITE+u} if u else {})} for i,(n,u) in enumerate(cr)]}
 def crumbs_html(cr): return '<nav class="bc" aria-label="breadcrumb"><ol>'+''.join(f'<li>{"<a href=\""+u+"\">"+E(n)+"</a>" if u else "<span aria-current=\"page\">"+E(n)+"</span>"}</li>' for n,u in cr)+'</ol></nav>'
 def shell(lang,path,title,desc,body,ld,en=True,og=None,ogt='website'):
   P='/en' if lang=='en' else ''
@@ -93,16 +93,16 @@ def detail(lang,kind,it,rel):
   else: w,h=1080,1620
   angs=it.get('angles',[])
   if kind=='pose':
-    prz=f"{it['zh']}，{it['line']}，{it['cat']}。";pre=f"{it['en']}, {it['lineEn']}"
+    prz=f"{it['zh']}，{it['line']}，{it['cat']}。";pzh=f"{it['zh']}，{it['line']}，{it['cat']}姿势";pre=f"{it['en']}, {it['lineEn']}"
     desc=(f"{it['zh']}：{it['line']} · {it['cat']}姿势参考，{len(angs)} 个拍摄角度（{'、'.join(a['zh'] for a in angs)}），附中英文提示词。" if zh else
       f"{te} — {it['lineEn']} pose reference ({cen.lower()}), {len(angs)} camera angles ({', '.join(a['en'] for a in angs)}), with an English prompt.")
     ttl=f"{tz} · {it['cat']}姿势参考 | 衣姿 PoseWear" if zh else f"{te} – {cen} Pose Reference | PoseWear"
   elif kind=='costume':
-    prz=it['zh'];pre=it['en']
+    prz=it['zh'];pre=it['en'];pzh=f"{it['cat']}穿搭，"+it['zh'].rstrip('。').replace('。','，')
     desc=(f"{it['ti']}：{it['cat']}穿搭参考图。{it['zh']}附英文提示词，可在线 AI 试穿。" if zh else f"{te} – {cen.lower()} outfit reference image with an AI prompt: {it['en']}. Try it on online.")
     ttl=f"{tz} · {it['cat']}穿搭参考 | 衣姿 PoseWear" if zh else f"{te} – {cen} Outfit Reference | PoseWear"
   else:
-    prz=it['zh'];pre=it['en']
+    prz=it['zh'];pre=it['en'];pzh=it['zh'].rstrip('。').replace('。','，')
     desc=f"{it['ti']}：{it['sec']}人像脸模参考（{it['len']}{'，'+it['st'] if it['st'] else ''}）。AI 生成的虚构人物，CC0 1.0，附中英文提示词。"
     ttl=f"{tz} · 人像脸模参考 {it['no']} | 衣姿 PoseWear"
   path=f'/{kind}/{it["id"]}/'
@@ -123,15 +123,15 @@ def detail(lang,kind,it,rel):
   lic=('<p class="mu">'+(f'许可：<a href="{CC0}" rel="license">CC0 1.0</a>，可商用、可修改，无需署名；原作者希望不要原样批量转载。来源：<a href="{src[1]}" rel="noopener">{src[0]}</a>（<a href="{src[3]}" rel="noopener">{src[2]}</a>）。' if kind=='portrait' else
        (f'来源：<a href="{src[1]}" rel="noopener">{src[0]}</a>，原作者 <a href="{src[3]}" rel="noopener">{src[2]}</a>。原站未标明授权，转载或商用请先联系原作者。' if zh else
         f'Source: <a href="{src[1]}" rel="noopener">{src[0]}</a> by <a href="{src[3]}" rel="noopener">{src[2]}</a>. No license is stated by the source; ask the author before reuse.'))+'</p>')
-  boxes=(f'<div class="box"><small>中文描述</small><p>{E(prz)}</p></div><div class="box"><small>英文提示词 · PROMPT</small><p>{E(pre)}</p></div>' if zh else
-         f'<div class="box"><small>PROMPT</small><p>{E(pre)}</p></div><div class="box" lang="zh-CN"><small>中文描述 · Chinese</small><p>{E(prz)}</p></div>')
+  boxes=(f'<div class="box"><small>中文描述</small><p>{E(prz)}</p></div><div class="box"><small>中文提示词</small><p>{E(pzh)}</p></div><div class="box"><small>英文提示词 · PROMPT</small><p>{E(pre)}</p></div>' if zh else
+         f'<div class="box"><small>PROMPT</small><p>{E(pre)}</p></div><div class="box" lang="zh-CN"><small>中文提示词 · Chinese prompt</small><p>{E(pzh)}</p></div>')
   rl=''.join(cardli(lang,kind,r) for r in rel)
   body=f'''<main><div class="im"><img src="/{img}" alt="{E(t)}" width="{w}" height="{h}" fetchpriority="high"></div>
 <div>{crumbs_html(cr)}<h1>{E(t)}</h1><div class="mu">{E((it['line']+' · '+it['cat'] if zh else it['lineEn']+' · '+cen) if kind=='pose' else (cz_ if zh else cen))} · {'编号' if zh else 'No.'} {E(it.get('no') or it['id'])}</div>{tg}
 {boxes}{ang}
 <a class="go" href="/#{kind}/{it['id']}">{'在衣姿中打开' if zh else 'Open in PoseWear'}</a><a class="go" style="background:#111" href="/#studio">{'去试穿' if zh else 'Try on'}</a>{lic}</div>
 <section class="rel"><h2>{('同类'+('姿势' if kind=='pose' else '穿搭' if kind=='costume' else '人像')) if zh else 'More like this'}</h2><ul>{rl}</ul></section></main>'''
-  ld=[io,crumbs_ld(lang,cr),{"@type":"WebPage","@id":url(lang,path),"url":url(lang,path),"name":ttl,"inLanguage":'zh-CN' if zh else 'en',"primaryImageOfPage":{"@id":url(lang,path)+'#image'},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":crumbs_ld(lang,cr)["itemListElement"]}}]
+  BID=url(lang,path)+'#breadcrumb';ld=[io,crumbs_ld(lang,cr,BID),{"@type":"WebPage","@id":url(lang,path),"url":url(lang,path),"name":ttl,"inLanguage":'zh-CN' if zh else 'en',"primaryImageOfPage":{"@id":url(lang,path)+'#image'},"breadcrumb":{"@id":BID}}]
   return shell(lang,path,ttl,desc,body,ld,en=kind in HAS_EN,og=img,ogt='article')
 for kind,L in [('pose',SP),('costume',SC),('portrait',SR)]:
   ck=lambda x:catof(kind,x)[1]
@@ -194,7 +194,7 @@ for lang in ['zh','en']:
 def featured(lang,n=12):return ''.join(cardli(lang,'costume',c) for c in SC[:n])
 catlinks=lambda lang:''.join(f'<li><a href="{"/en" if lang=="en" else ""}/{k}/{s}/">{E(z if lang=="zh" else e)}</a></li>' for k in ['pose','costume'] for s,z,e,L in CATS[k])
 en_desc=f"PoseWear: {len(SP)} pose references with multiple camera angles, {len(SC)} outfit references and {len(SR)} CC0 portrait face references, all with English and Chinese prompts — plus online AI try-on."
-ENLD=[{"@type":"WebSite","@id":SITE+'/en/#website',"url":SITE+'/en/',"name":"PoseWear","alternateName":"衣姿 PoseWear","inLanguage":"en","description":en_desc},
+ENLD=[{"@type":"WebSite","@id":SITE+'/en/#website',"url":SITE+'/en/',"name":"PoseWear","alternateName":"衣姿 PoseWear","inLanguage":"en","description":en_desc,"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"PoseWear","url":SITE+'/en/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":en_desc}]
 body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts</h1><p class="lead">{E(en_desc)} Favourite and combine references, copy prompts for Stable Diffusion or Midjourney, or upload your own photo to try an outfit on.</p>
 <p><a class="go" href="/#costume">Open the gallery</a><a class="go" style="background:#111" href="/#studio">Try on online</a></p>
@@ -205,8 +205,9 @@ body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts
 W('/en/',shell('en','/','PoseWear – Pose & Outfit Reference Library with AI Prompts and Online Try-On',en_desc,body,ENLD))
 add('pages','/',TODAY)
 # ---- 中文首页：标题、描述、真实数字、前 N 项静态卡片、JSON-LD、hreflang ----
-NA=sum(len(p['angles']) for p in poses.values())
-zh_desc=f"衣姿 PoseWear：{len(poses)} 个姿势（{NA} 张多角度图）、{len(cos)} 套服装、{len(pors)} 张人像参考图，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
+NA=sum(len(p['angles']) for p in poses.values());NA_PUB=sum(len(p['angles']) for p in SP)
+HC=dict(pose=len(poses),ang=NA,cos=len(cos),por=len(pors))  # 首页计数唯一来源；改公开数：HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR))
+zh_desc=f"衣姿 PoseWear：{HC['pose']} 个姿势（{HC['ang']} 张多角度图）、{HC['cos']} 套服装、{HC['por']} 张人像参考图，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
 zhttl='衣姿 PoseWear · 姿势、服装、人像参考图库 | 中英文提示词 + 在线 AI 试穿'
 idx=open(f'{D}/index.html').read()
 idx=re.sub(r'<title>.*?</title>',f'<title>{zhttl}</title>',idx,1)
@@ -215,11 +216,12 @@ idx=re.sub(r'<meta property="og:title" content="[^"]*">','<meta property="og:tit
 idx=re.sub(r'<meta property="og:description" content="[^"]*">',f'<meta property="og:description" content="{E(zh_desc)}">',idx,1)
 idx=idx.replace('<link rel="canonical" href="https://posewear.pages.dev/">','<link rel="canonical" href="https://posewear.pages.dev/">'+alts('/'))
 LD=[{"@type":"WebSite","@id":SITE+'/#website',"url":SITE+'/',"name":"衣姿 PoseWear","alternateName":["PoseWear","衣姿"],"inLanguage":"zh-CN","description":zh_desc,
-  "potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?q={search_term_string}'},"query-input":"required name=search_term_string"}},
+  "potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"衣姿 PoseWear","url":SITE+'/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],
   "offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"description":zh_desc,"image":SITE+'/og.png',"isAccessibleForFree":True,"featureList":["姿势参考图（多角度）","服装穿搭参考图","人像脸模参考（CC0）","中英文提示词","在线 AI 试穿"]}]
 idx=idx.replace('</head>',f'<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":LD},ensure_ascii=False,separators=(",",":"))}</script></head>',1)
-for a,b in [('288',len(poses)),('1439',NA),('1407',len(cos))]:
+HOME_COUNTS=[('288',HC['pose']),('1439',HC['ang']),('1407',HC['cos'])]
+for a,b in HOME_COUNTS:
   idx=idx.replace(f'<b data-n="{a}">0</b>',f'<b data-n="{b}">{b:,}</b>')
 def ssr(p):
   t=p['zh'];a=p['angles'];return (f'<article class="card ssr"><div class="ph pose done"><a href="/pose/{p["id"]}/" class="ssl"><img class="ld" src="/{a[0]["t"]}" alt="{E(t)}" width="300" height="400" decoding="async"{"" if SP.index(p)<4 else " loading=\"lazy\""}></a><span class="badge">{p["no"]}</span></div>'
@@ -242,4 +244,4 @@ open(f'{D}/sitemap_index.xml','w').write(ix);open(f'{D}/sitemap.xml','w').write(
 open(f'{D}/robots.txt','w').write(f'User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /o/\n\nSitemap: {SITE}/sitemap_index.xml\n')
 open('urls.txt','w').write('\n'.join(u for L in SM.values() for u,_,_ in L)+'\n')
 open(f'{D}/_headers','a').write('/en/*\n  Cache-Control: public, max-age=600\n/tag/*\n  Cache-Control: public, max-age=600\n/sitemap*\n  Cache-Control: public, max-age=3600\n')
-print('seo',{k:len(v) for k,v in SM.items()},'tags',len(TAGS))
+print('NA_PUB',NA_PUB);print('seo',{k:len(v) for k,v in SM.items()},'tags',len(TAGS))
