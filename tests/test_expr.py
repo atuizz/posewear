@@ -64,13 +64,18 @@ class ExprTests(unittest.TestCase):
         self.assertIn(expr.FACEKIT_COMMIT, text)
         self.assertIn(expr.FACEKIT_REPO, text)
         self.assertIn('MIT License', text)
+        self.assertEqual(len(ids['general']['items']), 120)
+        self.assertEqual(len(ids['adult']['items']), 60)
+        self.assertEqual(ids['general']['spec']['depth']['near'], 68.656)
+        self.assertEqual(expr.FALLBACK, {})
         for p in packs:
             self.assertIn('ICT-FaceKit', p['license'])
             self.assertIn('MIT', p['license'])
             for it in p['items']:
                 self.assertNotIn('正面', it['tags'])
                 self.assertNotIn('3/4 侧', it['tags'])
-                self.assertTrue(it['weights'])
+                self.assertIsInstance(it['weights'], dict)
+                self.assertIn('depth16', it['files'])
 
     def test_build_splits_gated(self):
         dist = tempfile.mkdtemp()
@@ -79,13 +84,15 @@ class ExprTests(unittest.TestCase):
             pub = doc['public']
             self.assertTrue(all(not it.get('gate') for it in pub['items']))
             self.assertTrue(all('e/gated/' not in json.dumps(it) for it in pub['items']))
-            self.assertIn('smirk_front', pub['gatedIndex'])
+            self.assertIn('seductive_gaze_front', pub['gatedIndex'])
             self.assertTrue(doc['gated']['items'])
             self.assertTrue(all(it.get('gate') == '18+' for it in doc['gated']['items']))
             self.assertTrue(os.path.isfile(os.path.join(dist, 'licenses', 'packs', 'general', 'THIRD_PARTY_LICENSES.txt')))
             self.assertTrue(os.path.isfile(os.path.join(dist, 'licenses', 'ICT-FaceKit.txt')))
-            self.assertFalse(os.path.exists(os.path.join(dist, 'e', 't', 'smirk_front_source.webp')))
-            self.assertTrue(os.path.isfile(os.path.join(dist, 'e', 'gated', 'adult', 't', 'smirk_front_source.webp')))
+            self.assertFalse(os.path.exists(os.path.join(dist, 'e', 't', 'seductive_gaze_front_source.webp')))
+            self.assertTrue(os.path.isfile(os.path.join(dist, 'e', 'gated', 'adult', 't', 'seductive_gaze_front_source.webp')))
+            self.assertTrue(any(it.get('depth16') for it in pub['items']))
+            self.assertEqual(pub['fallback'], {})
         finally:
             shutil.rmtree(dist)
 
@@ -141,6 +148,13 @@ class ExprTests(unittest.TestCase):
             pack(root, 'general', [item('a_front')], upstream={'repo': expr.FACEKIT_REPO, 'variant': 'Full', 'commit': expr.FACEKIT_COMMIT})
             _, errors = expr.validate(root)
             self.assertTrue(any('Light' in e for e in errors))
+            shutil.rmtree(os.path.join(root, 'general'))
+            pack(root, 'general', [item('a_front')])
+            m = json.load(open(os.path.join(root, 'general', 'manifest.json'), encoding='utf-8'))
+            m['items'][0]['content_rating'] = '18+'
+            json.dump(m, open(os.path.join(root, 'general', 'manifest.json'), 'w', encoding='utf-8'))
+            _, errors = expr.validate(root)
+            self.assertTrue(any('年龄门槛' in e for e in errors))
         finally:
             shutil.rmtree(root)
 
@@ -162,7 +176,35 @@ class ExprTests(unittest.TestCase):
             shutil.rmtree(src)
             shutil.rmtree(dest)
 
-    def test_sw_does_not_precache_gated(self):
+    def test_normalize_v2_shape(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'import_expressions_norm', os.path.join(os.path.dirname(__file__), '..', 'scripts', 'import-expressions.py'))
+        # already loaded as mod
+        raw = {
+            'version': '0.2.0', 'pack': 'adult', 'license': expr.FACEKIT_LICENSE,
+            'entries': [{'id': 'a_front', 'name_zh': '甲', 'tags': ['x'], 'angle': 'front', 'w': 8, 'h': 8,
+                         'source': 'source/a_front.png', 'depth': 'depth/a_front.png', 'landmarks': 'landmarks/a_front.png',
+                         'extra_note': 'keep-me'}],
+            'content_rating': '18+', 'spec': {'depth': {'near': 1, 'far': 2}},
+            'upstream': {'repo': expr.FACEKIT_REPO, 'commit': expr.FACEKIT_COMMIT,
+                         'model': 'ICT Face Model Light, generic_neutral_mesh'},
+        }
+        m = mod.normalize_manifest(raw, 'adult')
+        self.assertEqual(m['id'], 'adult')
+        self.assertEqual(m['upstream']['variant'], 'Light')
+        self.assertTrue(m['gated'])
+        self.assertEqual(m['items'][0]['content_rating'], '18+')
+        self.assertEqual(m['items'][0]['extra_note'], 'keep-me')
+        self.assertEqual(m['spec']['depth']['near'], 1)
+        bad = dict(raw)
+        bad['upstream'] = {'repo': expr.FACEKIT_REPO, 'commit': expr.FACEKIT_COMMIT, 'model': 'ICT Face Model Full'}
+        bad['pack'] = 'general'
+        bad['content_rating'] = None
+        bad['entries'] = [dict(raw['entries'][0], content_rating='18+')]
+        m2 = mod.normalize_manifest(bad, 'general')
+        self.assertNotEqual(m2['upstream'].get('variant'), 'Light')
+        self.assertTrue(m2['gated'])
         sw = open('src/sw.js', encoding='utf-8').read()
         self.assertIn('expressions-gated', sw)
         self.assertIn('gated', sw)

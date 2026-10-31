@@ -22,6 +22,49 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import expr
 
 DROP = {'README.md', 'README.txt', 'contact_sheet.png', '.DS_Store'}
+ADULT_GATE = {
+    'gated': True, 'ageGate': '18+', 'badge': '18+', 'switch': '成人表情',
+    'gateTitle': '显示成人向表情？',
+    'gateBody': '这些是 18+ 的面部表情，只有灰色人台头，没有身体，也没有裸露。仅适合已满 18 岁的用户。',
+    'confirm': '我已满 18 岁，打开', 'cancel': '暂不',
+    'noticeZh': '18+ 面部表情。灰色人台头，没有身体，没有裸露。',
+    'noticeEn': '18+ facial expression. Gray mannequin head only, no body and no nudity.',
+}
+
+
+def normalize_manifest(manifest, folder=None):
+    """把素材方的清单收成校验能通过的形状，不认识的字段原样留下。"""
+    m = dict(manifest)
+    if not m.get('items') and isinstance(m.get('entries'), list):
+        m['items'] = m['entries']
+    if not m.get('id'):
+        m['id'] = m.get('pack') or folder or ''
+    up = dict(m.get('upstream') or {})
+    model_s = str(up.get('model') or '')
+    if not str(up.get('variant') or '').strip() and 'Light' in model_s:
+        up['variant'] = 'Light'
+    if not m.get('model') and 'ICT' in model_s and 'Face' in model_s:
+        m['model'] = 'ICT-FaceKit'
+    m['upstream'] = up
+    items = []
+    for it in m.get('items') or []:
+        if not isinstance(it, dict):
+            items.append(it)
+            continue
+        it = dict(it)
+        if not it.get('pack'):
+            it['pack'] = m['id']
+        if not it.get('content_rating') and expr.is_adult_rating(m.get('content_rating')):
+            it['content_rating'] = m.get('content_rating')
+        items.append(it)
+    m['items'] = items
+    adult = expr.is_adult_rating(m.get('content_rating')) or any(
+        isinstance(it, dict) and expr.is_adult_rating(it.get('content_rating')) for it in items)
+    if adult and not m.get('gated'):
+        for k, v in ADULT_GATE.items():
+            m.setdefault(k, v)
+        m['gated'] = True
+    return m
 
 
 def _extract(path):
@@ -37,11 +80,20 @@ def _extract(path):
 
 
 def _rels(manifest, it):
-    out = []
+    fields = []
     for view in expr.pack_views(manifest):
-        field = view.get('field') or view['id']
-        if it.get(field):
-            out.append(os.path.normpath(str(it[field])))
+        fields.append(view.get('field') or view['id'])
+    fields.append('depth16')
+    out = []
+    seen = set()
+    for field in fields:
+        rel = it.get(field)
+        if not rel:
+            continue
+        rel = os.path.normpath(str(rel))
+        if rel not in seen:
+            seen.add(rel)
+            out.append(rel)
     return out
 
 
@@ -69,6 +121,9 @@ def _write_pack(dest, manifest, src_root):
         up = manifest.get('upstream') if isinstance(manifest.get('upstream'), dict) else {}
         open(dest_lic, 'w', encoding='utf-8').write(expr.third_party_text(
             up.get('repo') or expr.FACEKIT_REPO, up.get('variant') or expr.FACEKIT_VARIANT, up.get('commit') or ''))
+    sheets = os.path.join(src_root, 'contact_sheets')
+    if os.path.isdir(sheets):
+        shutil.copytree(sheets, os.path.join(dest, 'contact_sheets'))
     with open(os.path.join(dest, 'manifest.json'), 'w', encoding='utf-8') as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)
         f.write('\n')
@@ -88,7 +143,7 @@ def _sources(path):
         if len(ids) <= 1:
             if not manifest.get('id'):
                 manifest['id'] = ids[0] if ids else os.path.basename(os.path.abspath(path))
-            return [(manifest, path)]
+            return [(normalize_manifest(manifest, os.path.basename(path)), path)]
         cfg = manifest.get('packConfig') or {}
         out = []
         for pid in ids:
@@ -97,7 +152,7 @@ def _sources(path):
                 sub.update(cfg[pid])
             sub['id'] = pid
             sub['items'] = [it for it in items if it.get('pack') == pid]
-            out.append((sub, path))
+            out.append((normalize_manifest(sub, pid), path))
         return out
     found = []
     for name in sorted(os.listdir(path)):
@@ -105,9 +160,7 @@ def _sources(path):
         mp = os.path.join(sub, 'manifest.json')
         if os.path.isdir(sub) and os.path.isfile(mp):
             manifest = json.load(open(mp, encoding='utf-8'))
-            if not manifest.get('id'):
-                manifest['id'] = name
-            found.append((manifest, sub))
+            found.append((normalize_manifest(manifest, name), sub))
     if not found:
         raise SystemExit('没有找到 manifest.json：%s' % path)
     return found
@@ -133,6 +186,16 @@ def import_path(src, dest_root=expr.ROOT):
                 if os.path.isdir(final):
                     shutil.rmtree(final)
                 shutil.copytree(os.path.join(staging, pid), final)
+            parent = os.path.dirname(os.path.abspath(dest_root))
+            tools = os.path.join(path, 'tools')
+            if os.path.isdir(tools):
+                dest_tools = os.path.join(parent, 'tools')
+                if os.path.isdir(dest_tools):
+                    shutil.rmtree(dest_tools)
+                shutil.copytree(tools, dest_tools)
+            readme = os.path.join(path, 'README.md')
+            if os.path.isfile(readme):
+                shutil.copy2(readme, os.path.join(parent, 'README.md'))
         finally:
             shutil.rmtree(staging, ignore_errors=True)
         return ids

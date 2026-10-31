@@ -12,7 +12,8 @@ KEY_RE = __import__('re').compile(r'^[A-Za-z_][A-Za-z0-9_]*$')
 FIELDS = {
     'id': 'id', 'name_zh': 'zh', 'name_en': 'en', 'tags': 'tags', 'angle': 'angle',
     'group': 'group', 'prompt_zh': 'zhPrompt', 'prompt_en': 'enPrompt', 'w': 'w', 'h': 'h',
-    'pack': 'pack', 'blendshape_weights': 'weights',
+    'pack': 'pack', 'blendshape_weights': 'weights', 'depth16': 'depth16',
+    'content_rating': 'contentRating',
 }
 REQ = ['id', 'name_zh', 'tags', 'angle', 'source', 'depth', 'landmarks', 'w', 'h', 'pack']
 VIEWS = [
@@ -29,8 +30,9 @@ ANGLES = {
     'low': {'zh': '仰拍', 'en': 'low angle, from below', 'pose': '仰拍', 'aliases': ['仰拍']},
 }
 ANGLE_ORDER = ['front', 'three_quarter', 'side', 'high', 'low']
-# 姿势角度对不上时，先试同名，再按这里退回。键是姿势库的中文角度。
-FALLBACK = {'俯拍': ['正面'], '仰拍': ['正面'], '侧面': ['斜侧']}
+# 默认不回退：五个角度都有素材时按同角度配对。
+# 包可以在 manifest.fallback 里声明缺角度时的退回，例如 {"俯拍": ["正面"]}。
+FALLBACK = {}
 TEMPLATES = {
     'zh': '{poseZh}，{lineZh}，{poseAngZh}。面部表情：{exprZh}（{tags}），{exprAngZh}。请参考所附表情原图、深度图（白色为近）和面部关键点线稿。',
     'en': '{poseEn}, {lineEn}, {poseAngEn}. Facial expression: {exprEn} ({tags}), {exprAngEn}. Follow the attached expression render, depth map (white is near) and facial-landmark line art.',
@@ -116,6 +118,10 @@ def hide_set(table, manifests):
     return {x for x in hide if isinstance(x, str) and x}
 
 
+def is_adult_rating(v):
+    return str(v or '').replace('＋', '+').strip() in ('18+',)
+
+
 def _num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
@@ -133,16 +139,14 @@ def check_image(path, role, w, h):
         err.append('%s: 原图通道 %s，需要 RGB' % (path, im.mode))
     elif role == 'depth' and im.mode != 'L':
         err.append('%s: 深度图通道 %s，需要 8 位单通道 L（白为近）' % (path, im.mode))
+    elif role == 'depth16' and im.mode not in ('I;16', 'I;16B', 'I;16L', 'I;16N'):
+        err.append('%s: depth16 通道 %s，需要 16 位单通道' % (path, im.mode))
     elif role == 'line':
         if im.mode not in ('L', 'RGB', 'RGBA'):
             err.append('%s: 线稿通道 %s' % (path, im.mode))
-        elif im.mode in ('RGB', 'RGBA'):
-            r, g, b = im.convert('RGB').split()
-            if r.tobytes() != g.tobytes() or g.tobytes() != b.tobytes():
-                err.append('%s: 线稿不是纯灰度' % path)
     elif role == 'image' and im.mode not in ('L', 'RGB', 'RGBA'):
         err.append('%s: 通道 %s' % (path, im.mode))
-    elif role not in ('color', 'depth', 'line', 'image'):
+    elif role not in ('color', 'depth', 'depth16', 'line', 'image'):
         err.append('%s: 未知视图 role %s' % (path, role))
     return err
 
@@ -172,6 +176,7 @@ def _pack_meta(manifest, folder):
         'noticeZh': manifest.get('noticeZh') or '',
         'noticeEn': manifest.get('noticeEn') or '',
         'upstream': manifest.get('upstream') if isinstance(manifest.get('upstream'), dict) else {},
+        'spec': manifest.get('spec') if isinstance(manifest.get('spec'), dict) else {},
     }
 
 
@@ -239,8 +244,13 @@ def validate(root=ROOT):
                 errors.append('%s: %s 须写明锁定的 commit' % (pid, THIRD_PARTY))
             if repo and repo not in text:
                 errors.append('%s: %s 须写明上游仓库 URL' % (pid, THIRD_PARTY))
-        meta['upstream'] = {'repo': repo, 'variant': variant, 'commit': commit}
+        meta['upstream'] = {'repo': repo, 'variant': variant, 'commit': commit, 'model': str(up.get('model') or '')}
         meta['thirdParty'] = 'licenses/packs/%s/%s' % (pid, THIRD_PARTY)
+        model_s = str(up.get('model') or '')
+        if model_s and 'Light' not in model_s and variant != 'Light':
+            errors.append('%s: upstream.model 里没有 Light，不能当作 ICT-FaceKit Light' % pid)
+        if is_adult_rating(manifest.get('content_rating')) and not meta['gated']:
+            errors.append('%s: content_rating 为 18+，但包没有打开 gated/ageGate' % pid)
         if meta['gated']:
             if not meta['ageGate']:
                 errors.append('%s: gated 包必须声明 ageGate' % pid)
@@ -268,6 +278,8 @@ def validate(root=ROOT):
             seen[iid] = pid
             if it.get('pack') != pid:
                 errors.append('%s/%s: pack 必须等于包 id %s' % (pid, iid, pid))
+            if is_adult_rating(it.get('content_rating')) and not meta['gated']:
+                errors.append('%s/%s: content_rating 为 18+，但包没有打开年龄门槛' % (pid, iid))
             if not isinstance(it.get('tags'), list) or not all(isinstance(t, str) and t for t in it['tags']):
                 errors.append('%s/%s: tags 必须是非空字符串数组' % (pid, iid))
                 tags = []
@@ -314,6 +326,16 @@ def validate(root=ROOT):
                     continue
                 errors.extend(check_image(full, view.get('role') or 'image', w, h))
                 files[view['id']] = full
+            rel16 = it.get('depth16')
+            if rel16:
+                full16 = _inside(base, str(rel16))
+                if not full16:
+                    errors.append('%s/%s: depth16 路径越界 %s' % (pid, iid, rel16))
+                elif not os.path.isfile(full16):
+                    errors.append('%s/%s: depth16 文件不存在 %s' % (pid, iid, rel16))
+                else:
+                    errors.extend(check_image(full16, 'depth16', w, h))
+                    files['depth16'] = full16
             items.append({
                 'id': iid, 'group': group, 'zh': it['name_zh'], 'en': it.get('name_en') or iid,
                 'tags': tags, 'angle': ang,
@@ -349,7 +371,7 @@ def _public_pack(p):
     return {k: p[k] for k in (
         'id', 'version', 'nameZh', 'nameEn', 'license', 'source', 'author', 'url', 'note',
         'placeholder', 'model', 'gated', 'ageGate', 'badge', 'switch', 'gateTitle', 'gateBody',
-        'confirm', 'cancel', 'noticeZh', 'noticeEn', 'upstream', 'thirdParty') if k in p}
+        'confirm', 'cancel', 'noticeZh', 'noticeEn', 'upstream', 'thirdParty', 'spec') if k in p}
 
 
 def _item_out(it, views):
@@ -364,6 +386,8 @@ def _item_out(it, views):
         o['badge'] = it.get('badge') or it['gate']
     if it.get('weights'):
         o['weights'] = it['weights']
+    if it.get('depth16'):
+        o['depth16'] = it['depth16']
     return o
 
 
@@ -382,6 +406,21 @@ def _paths(it, view_id):
     )
 
 
+def _pack_fallback(packs):
+    fb = dict(FALLBACK)
+    for p in packs:
+        try:
+            m = json.load(open(os.path.join(p['root'], 'manifest.json'), encoding='utf-8'))
+        except Exception:
+            continue
+        extra = m.get('fallback')
+        if isinstance(extra, dict):
+            for k, v in extra.items():
+                if isinstance(v, list):
+                    fb[str(k)] = [str(x) for x in v]
+    return fb
+
+
 def build(dist, root=ROOT):
     packs, errors = validate(root)
     if errors:
@@ -396,6 +435,14 @@ def build(dist, root=ROOT):
         for it in p['items']:
             rels = {}
             for vid, src in it['files'].items():
+                if vid == 'depth16':
+                    o = ('o/e/gated/%s/depth16/%s.png' if it.get('gate') else 'o/e/%s/depth16/%s.png') % (it['pack'], it['id'])
+                    odst = os.path.join(dist, o)
+                    os.makedirs(os.path.dirname(odst), exist_ok=True)
+                    shutil.copy2(src, odst)
+                    expect.add(o)
+                    it['depth16'] = o
+                    continue
                 t, i, o = _paths(it, vid)
                 for rel, size in ((t, (360, 480)), (i, (1200, 1600))):
                     dest = os.path.join(dist, rel)
@@ -442,7 +489,7 @@ def build(dist, root=ROOT):
         'packs': pub_packs,
         'angles': angles,
         'views': views,
-        'fallback': FALLBACK,
+        'fallback': _pack_fallback(packs),
         'templates': TEMPLATES,
         'items': public_items,
         'gatedIds': [it['id'] for it in gated_items],

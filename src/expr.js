@@ -24,7 +24,8 @@ function renderSwitch(){const slot=$('#exprGate');if(!slot)return;const gs=[...n
  slot.innerHTML=gs.map(p=>{const on=!!gates()[p.ageGate];return `<button type="button" class="asw" data-gate="${A.esc(p.ageGate)}" role="switch" aria-checked="${on}"><span class="trk" aria-hidden="true"><span class="kn"></span></span><b>${A.esc(p.switch||p.badge||p.ageGate)}</b></button>`}).join('');
  slot.querySelectorAll('[data-gate]').forEach(b=>b.onclick=()=>{const id=b.dataset.gate;if(gates()[id]){setGate(id,false);dropGated();A.drawFilters();A.apply();renderCombo();A.toast('已关闭'+((gatePack(id).switch)||''),()=>{setGate(id,true);loadGated().then(()=>{A.drawFilters();A.apply();renderCombo()})})}else{$('#exprAge').dataset.gate=id;ask(id)}})}
 function renderPacks(){const el=$('#exprPacks');if(!el)return;const ph=packs().some(p=>p.placeholder)?'<p>当前图片是占位，正式的 ICT-FaceKit 渲染用导入命令替换。模型许可不变。</p>':'';
- el.innerHTML=ph+packs().map(p=>`<p><b>${A.esc(p.nameZh||p.id)}</b>${p.gated?` · <span class="tag c">${A.esc(p.badge||p.ageGate)}</span> 默认隐藏`:''}${p.version?' · v'+A.esc(p.version):''}<br>${A.esc(p.source||'')} ${p.url?`<a href="${A.esc(p.url)}" target="_blank" rel="noopener">${A.esc(p.url)}</a>`:''}<br>${A.esc(p.license||'')}${p.note?'<br>'+A.esc(p.note):''}</p>`).join('')+
+ el.innerHTML=ph+packs().map(p=>{const d=p.spec&&p.spec.depth;const depth=d?`<br>深度全库统一：near ${d.near}，far ${d.far}。${A.esc(d.encoding||'白为近')}。8 位图用于预览，16 位图在下载包里。`:'';
+  return `<p><b>${A.esc(p.nameZh||p.id)}</b>${p.gated?` · <span class="tag c">${A.esc(p.badge||p.ageGate)}</span> 默认隐藏`:''}${p.version?' · v'+A.esc(p.version):''}<br>${A.esc(p.source||'')} ${p.url?`<a href="${A.esc(p.url)}" target="_blank" rel="noopener">${A.esc(p.url)}</a>`:''}<br>${A.esc(p.license||'')}${p.note?'<br>'+A.esc(p.note):''}${depth}</p>`}).join('')+
   '<p>人脸模型：<a href="https://github.com/ICT-VGL/ICT-FaceKit" target="_blank" rel="noopener">ICT-FaceKit Light</a>，Copyright (c) 2020 USC Institute for Creative Technologies，MIT。每个包目录里有 THIRD_PARTY_LICENSES.txt，写明锁定的提交。<a href="/licenses/ICT-FaceKit.txt">许可全文</a>。本站是开源非商业项目，不收款。</p>'}
 function noticeText(it){const p=packOf(it);const up=p.upstream||{};return ['NOTICE'+(p.badge?': '+p.badge:''),p.noticeZh,p.noticeEn,p.gateBody,'License: '+(p.license||''),up.repo&&('Upstream: '+up.repo),up.variant&&('Variant: '+up.variant),up.commit&&('Commit: '+up.commit),'ICT-FaceKit Light, Copyright (c) 2020 USC Institute for Creative Technologies, MIT.'].filter(Boolean).join('\n')+'\n'}
 const ext=u=>(String(u).match(/\.\w+$/)||['.png'])[0];
@@ -32,7 +33,9 @@ const licCache=new Map();
 function licenseBlob(it){const p=packOf(it);const url=p.thirdParty?'/'+p.thirdParty:'/licenses/ICT-FaceKit.txt';
  if(licCache.has(url))return Promise.resolve(licCache.get(url));
  return fetch(url).then(r=>{if(!r.ok)throw Error(url);return r.blob()}).then(b=>{licCache.set(url,b);return b})}
-async function filesOf(it){const out=[];for(const v of views()){const f=it.views&&it.views[v.id];if(!f)continue;const r=await fetch('/'+f.o);if(!r.ok)throw Error(f.o);out.push({name:`${it.id}_${v.id}${ext(f.o)}`,blob:await r.blob(),view:v.id})};return out}
+async function filesOf(it){const out=[];for(const v of views()){const f=it.views&&it.views[v.id];if(!f)continue;const r=await fetch('/'+f.o);if(!r.ok)throw Error(f.o);out.push({name:`${it.id}_${v.id}${ext(f.o)}`,blob:await r.blob(),view:v.id})}
+ if(it.depth16){const r=await fetch('/'+it.depth16);if(!r.ok)throw Error(it.depth16);out.push({name:`${it.id}_depth16.png`,blob:await r.blob(),view:'depth16'})}
+ return out}
 async function withLegal(items,files){const list=Array.isArray(items)?items:[items].filter(Boolean);const seen=new Set();const many=new Set(list.map(it=>it.pack)).size>1;
  for(const it of list){if(seen.has(it.pack))continue;seen.add(it.pack);const dir=many?it.pack+'/':'';
   files.push({name:dir+'THIRD_PARTY_LICENSES.txt',blob:await licenseBlob(it)});
@@ -44,7 +47,9 @@ async function downloadOne(it){try{const v=A.st.xv&&it.views[A.st.xv]?A.st.xv:'s
 async function downloadSet(it){try{const files=await withLegal(it,await filesOf(it));window.X.dl(await makeZip(files),`posewear-${it.id}${it.gate?'-18plus':''}.zip`);A.toast(it.gate?'已打包这一套（含 18+ 说明和许可）':'已打包这一套（含第三方许可）')}catch(e){A.toast('打包失败')}}
 function manifestOf(list){const by={};list.forEach(it=>{const p=packOf(it);(by[it.pack]||(by[it.pack]={...p,items:[]})).items.push({id:it.id,name_zh:it.zh,name_en:it.en,tags:it.tags,angle:it.angle,group:it.group,prompt_zh:it.zhPrompt,prompt_en:it.enPrompt,w:it.w,h:it.h,pack:it.pack,blendshape_weights:it.weights||undefined,gate:it.gate||undefined,badge:it.badge||undefined})});return{packs:Object.values(by)}}
 async function zipList(){const L=A.st.list.filter(it=>it.type=='expression');if(!L.length)return A.toast('当前没有可打包的表情');const b=$('#exprZip');const old=b.textContent;b.disabled=true;const files=[];let bytes=0;const cap=180*1024*1024;
- try{let n=0;for(const it of L){for(const v of views()){const f=it.views[v.id];if(!f)continue;const r=await fetch('/'+f.o);if(!r.ok)throw Error(f.o);const blob=await r.blob();bytes+=blob.size;if(bytes>cap){A.toast('筛选结果超过 180MB，请缩小范围再打包');return}files.push({name:`${v.id}/${it.id}${ext(f.o)}`,blob})}b.textContent=`打包中 ${++n}/${L.length}`}
+ try{let n=0;for(const it of L){for(const v of views()){const f=it.views[v.id];if(!f)continue;const r=await fetch('/'+f.o);if(!r.ok)throw Error(f.o);const blob=await r.blob();bytes+=blob.size;if(bytes>cap){A.toast('筛选结果超过 180MB，请缩小范围再打包');return}files.push({name:`${v.id}/${it.id}${ext(f.o)}`,blob})}
+  if(it.depth16){const r=await fetch('/'+it.depth16);if(r.ok){const blob=await r.blob();bytes+=blob.size;files.push({name:`depth16/${it.id}.png`,blob})}}
+  b.textContent=`打包中 ${++n}/${L.length}`}
   files.push({name:'manifest.json',blob:new Blob([JSON.stringify(manifestOf(L),null,2)])});
   await withLegal(L,files);
   window.X.dl(await makeZip(files),`posewear-expr-${L.length}.zip`);A.toast(`已打包 ${L.length} 个表情`)}catch(e){A.toast('打包失败')}finally{b.disabled=false;b.textContent=old}}
@@ -53,7 +58,8 @@ function fill(t,o){return t.replace(/\{(\w+)\}/g,(_,k)=>o[k]??'')}
 function resolve(){const pose=A.ITEMS[C.pose],expr=A.ITEMS[C.expr];if(!pose||!expr)return null;const ang=pose.angles[Math.min(C.ai,pose.angles.length-1)]||pose.angles[0];
  const sibs=A.DATA.expression.filter(e=>e.group==expr.group&&e.pack==expr.pack&&A.ok(e));
  const prefs=[ang.zh,...((meta().fallback||{})[ang.zh]||[])];let used=null;for(const zh of prefs){used=sibs.find(e=>e.angleZh==zh||e.poseAngle==zh);if(used)break}
- if(!used)used=sibs[0]||expr;const fell=used.angleZh!=ang.zh&&used.poseAngle!=ang.zh;return{pose,ang,expr,used,fell}}
+ if(!used)return{pose,ang,expr,used:expr,fell:expr.angleZh!=ang.zh&&expr.poseAngle!=ang.zh,missing:true};
+ const fell=used.angleZh!=ang.zh&&used.poseAngle!=ang.zh;return{pose,ang,expr,used,fell,missing:false}}
 function promptOf(r,lang){const tpl=(meta().templates||{})[lang]||'';const tags=r.used.tags.join(lang=='en'?', ':'、');
  const body=fill(tpl,{poseZh:r.pose.zh,poseEn:r.pose.en,lineZh:r.pose.line,lineEn:r.pose.lineEn,poseAngZh:r.ang.zh,poseAngEn:r.ang.en,exprZh:r.used.zh,exprEn:r.used.en,exprAngZh:r.used.angleZh,exprAngEn:r.used.angleEn,tags});
  const note=r.used.gate?(lang=='en'?(packOf(r.used).noticeEn||'18+'):(packOf(r.used).noticeZh||r.used.badge||'')):'';
@@ -64,7 +70,7 @@ function renderCombo(){const box=$('#xcombo');if(!box||box.hidden)return;const r
  $('#xAng').innerHTML=pose?pose.angles.map((a,i)=>`<button type="button" class="chip ${i==C.ai?'on':''}" data-pai="${i}">${A.esc(a.zh)}</button>`).join(''):'';
  const expr=A.ITEMS[C.expr];
  $('#xExpr').innerHTML=r?views().map(v=>r.used.views[v.id]?`<img src="${r.used.views[v.id].t}" alt="${A.esc(v.zh)}" title="${A.esc(v.zh)}">`:'').join('')+(r.used.badge?`<span class="badge gate">${A.esc(r.used.badge)}</span>`:''):(expr?`<span class="mu">${A.esc(expr.zh)}</span>`:'<span class="mu">在卡片上点「配姿势」</span>');
- const hint=$('#xHint');if(r){hint.textContent=r.fell?`${r.ang.zh}没有对应表情，已退回${r.used.angleZh}`:`角度一致：${r.used.angleZh}`;hint.classList.toggle('warn',r.fell)}else hint.textContent=pose?'再选一个表情':'选一个姿势角度，再配一个表情';
+ const hint=$('#xHint');if(r){hint.textContent=r.missing?`这个表情没有「${r.ang.zh}」，包里也没有配置回退`:r.fell?`${r.ang.zh}没有对应表情，已退回${r.used.angleZh}`:`角度一致：${r.used.angleZh}`;hint.classList.toggle('warn',r.fell||r.missing)}else hint.textContent=pose?'再选一个表情':'选一个姿势角度，再配一个表情';
  $('#xLang').querySelectorAll('[data-xl]').forEach(b=>b.classList.toggle('on',b.dataset.xl==C.lang));
  $('#xPrompt').value=r?promptOf(r,C.lang):''}
 function pair(it){C.expr=it.k;if(!$('#lb').hidden)A.lbClose();$('#xcombo').classList.remove('min');$('#xMin').textContent='收起';renderCombo();$('#xcombo').scrollIntoView({block:'nearest'});A.toast('已配上表情：'+it.zh+(it.badge?'（'+it.badge+'）':''))}

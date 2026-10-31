@@ -224,9 +224,11 @@ python3 build.py
 
 可选：`name_en`、`group`、`prompt_zh`、`prompt_en`、`blendshape_weights`。
 
-`blendshape_weights` 是对象，键是 ICT-FaceKit 的 blendshape 名（标识符，如 `mouthSmile_L`），值是 0 到 1 的数。不校验名字是否在固定列表里，所以新增形态不用改代码。
+`blendshape_weights` 是对象，键是 ICT-FaceKit 的 blendshape 名（标识符，如 `mouthSmile_L`），值是 0 到 1 的数。不校验名字是否在固定列表里，所以新增形态不用改代码。`depth16` 可选，是 16 位单通道深度图，和 8 位图用同一套 near/far（写在包的 `spec.depth` 里，各图可以直接比较）。页面上仍用 8 位图预览，下载包里带上 16 位原图。
 
-`angle` 不限制枚举。已知的 `front`、`three_quarter`、`side`、`high`、`low` 会显示成正面、斜侧、侧面、俯拍、仰拍。新角度写在包的 `angles` 里即可，例如 `"bird": {"zh":"鸟瞰","en":"bird view","pose":"俯拍"}`；不写就原样显示。标签里如果混进「正面」「3/4 侧」这类角度词，展示时会去掉。
+`angle` 不限制枚举。已知的 `front`、`three_quarter`、`side`、`high`、`low` 分别对应正面、斜侧、侧面、俯拍、仰拍。新角度写在包的 `angles` 里即可。包里这个角度有素材时按同角度配对，不回退。缺角度时的退回写在 manifest 的 `fallback` 里，例如 `{"俯拍":["正面"]}`，不写就不退回。标签里如果混进「正面」「3/4 侧」这类角度词，展示时会去掉。
+
+条目上的 `content_rating: "18+"` 要求所在包打开 `gated` / `ageGate`，否则构建失败。不认识的额外字段会保留。
 
 构建还会检查：必填字段、id 全局唯一、文件都在包目录内、尺寸和 manifest 的 `w`/`h` 一致、原图是 RGB、深度图是 8 位单通道（白为近）、线稿是灰度。任何一条失败，`build.py` 直接退出。
 
