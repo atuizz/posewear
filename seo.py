@@ -43,7 +43,7 @@ def catof(kind,it):
   if kind=='costume': return ('costume',CCAT[it['cat']][0],it['cat'],CCAT[it['cat']][1])
   return ('portrait',RLEN[it['len']][0],it['len'],RLEN[it['len']][1])
 HAS_EN={'pose','costume'}  # 人像详情页数量太大，英文版只做分类页（Pages 文件数上限）
-LAB={'zh':{'pose':'姿势','costume':'服装','portrait':'人像','tag':'标签','home':'首页'},'en':{'pose':'Poses','costume':'Outfits','portrait':'Portraits','tag':'Tags','home':'Home'}}
+LAB={'zh':{'pose':'姿势','costume':'服装','portrait':'人像','expression':'表情','tag':'标签','home':'首页'},'en':{'pose':'Poses','costume':'Outfits','portrait':'Portraits','expression':'Expressions','tag':'Tags','home':'Home'}}
 CSS2=CSS+'''
 .bc ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px}.bc li+li:before{content:"›";margin-right:4px;color:#aaa}.bc a{text-decoration:none}.bc a:hover{text-decoration:underline}
 .tg{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.tg a{font-size:13px;background:#f5f5f5;border-radius:999px;padding:4px 12px;text-decoration:none}.tg a:hover{background:#ececec}
@@ -61,7 +61,7 @@ def crumbs_ld(lang,cr,bid=None): return {"@type":"BreadcrumbList",**({"@id":bid}
 def crumbs_html(cr): return '<nav class="bc" aria-label="breadcrumb"><ol>'+''.join(f'<li>{"<a href=\""+u+"\">"+E(n)+"</a>" if u else "<span aria-current=\"page\">"+E(n)+"</span>"}</li>' for n,u in cr)+'</ol></nav>'
 def shell(lang,path,title,desc,body,ld,en=True,og=None,ogt='website'):
   P='/en' if lang=='en' else ''
-  nav=(f'<nav><a href="{P}/pose/">{LAB[lang]["pose"]}</a><a href="{P}/costume/">{LAB[lang]["costume"]}</a><a href="{P}/portrait/">{LAB[lang]["portrait"]}</a>'+
+  nav=(f'<nav><a href="{P}/pose/">{LAB[lang]["pose"]}</a><a href="{P}/costume/">{LAB[lang]["costume"]}</a><a href="{P}/portrait/">{LAB[lang]["portrait"]}</a><a href="{P}/expression/">{LAB[lang]["expression"]}</a>'+
     (f'<a href="/en{path}" hreflang="en" lang="en">EN</a>' if lang=='zh' and en else f'<a href="{path}" hreflang="zh-CN" lang="zh-CN">中文</a>' if lang=='en' else '')+'</nav>')
   foot=('Images from AI Pose Gallery / AI Costume Gallery (by @giaaibusi) and AI Portrait Gallery (by @agi_aibusi, CC0 1.0). All AI-generated. <a href="/en/">PoseWear home</a>' if lang=='en' else
     '图片来自 AI Pose Gallery / AI Costume Gallery（原作者 @giaaibusi）与 AI Portrait Gallery（@agi_aibusi，CC0 1.0），均为 AI 生成图，中文描述由本站整理。<a href="/">返回首页</a>')
@@ -163,9 +163,9 @@ def listing(lang,kind,base,slug,cz_,cen,L,kindi=None,en=True,sm='pages'):
         {"@type":"ItemList","numberOfItems":len(items),"itemListElement":[{"@type":"ListItem","position":i+1,"url":SITE+('/en' if not zh and kindi in HAS_EN else '')+f'/{kindi}/{it["id"]}/'} for i,it in enumerate(items)]}]
     W(P+path,shell(lang,path,ttl,desc,body,ld,en=en))
     if lang=='zh': add(sm,path,LM[kindi],en=en)
-CATS={'pose':[(PCAT[k][0],k,PCAT[k][1],[p for p in SP if p['cat']==k]) for k in PCAT],
- 'costume':[(CCAT[k][0],k,CCAT[k][1],[c for c in SC if c['cat']==k]) for k in CCAT],
- 'portrait':[(RSEC[k][0],k,RSEC[k][1],[r for r in SR if r['sec']==k]) for k in RSEC]+[(RLEN[k][0],k,RLEN[k][1],[r for r in SR if r['len']==k]) for k in RLEN]}
+CATS={'pose':[t for t in ((PCAT[k][0],k,PCAT[k][1],[p for p in SP if p['cat']==k]) for k in PCAT) if t[3]],
+ 'costume':[t for t in ((CCAT[k][0],k,CCAT[k][1],[c for c in SC if c['cat']==k]) for k in CCAT) if t[3]],
+ 'portrait':[t for t in ((RSEC[k][0],k,RSEC[k][1],[r for r in SR if r['sec']==k]) for k in RSEC) if t[3]]+[t for t in ((RLEN[k][0],k,RLEN[k][1],[r for r in SR if r['len']==k]) for k in RLEN) if t[3]]}
 for lang in ['zh','en']:
   for kind,cs in CATS.items():
     for slug,z,e,L in cs: listing(lang,kind,f'/{kind}/',slug,z,e,L)
@@ -193,20 +193,20 @@ for lang in ['zh','en']:
 # ---- 英文首页 ----
 def featured(lang,n=12):return ''.join(cardli(lang,'costume',c) for c in SC[:n])
 catlinks=lambda lang:''.join(f'<li><a href="{"/en" if lang=="en" else ""}/{k}/{s}/">{E(z if lang=="zh" else e)}</a></li>' for k in ['pose','costume'] for s,z,e,L in CATS[k])
-en_desc=f"PoseWear: {len(SP)} pose sets ({NA_PUB} angle images), {len(SC):,} outfits and {len(SR):,} CC0 portraits, all with English and Chinese prompts — plus online AI try-on."
+en_desc=f"PoseWear: {len(SP)} pose sets ({NA_PUB} angle images), {len(SC):,} outfits, {len(SR):,} CC0 portraits and {len((EXPR or {}).get('public_items') or [])} expression references, all with English and Chinese prompts — plus online AI try-on."
 ENLD=[{"@type":"WebSite","@id":SITE+'/en/#website',"url":SITE+'/en/',"name":"PoseWear","alternateName":"衣姿 PoseWear","inLanguage":"en","description":en_desc,"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"PoseWear","url":SITE+'/en/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":en_desc}]
 body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts</h1><p class="lead">{E(en_desc)} Favourite and combine references, copy prompts for Stable Diffusion or Midjourney, or upload your own photo to try an outfit on.</p>
 <p><a class="go" href="/#costume">Open the gallery</a><a class="go" style="background:#111" href="/#studio">Try on online</a></p>
-<section class="sec"><h2>Browse by category</h2><ul class="tg">{catlinks("en")}<li><a href="/en/portrait/">Portraits</a></li><li><a href="/en/tag/">Outfit tags</a></li></ul></section>
+<section class="sec"><h2>Browse by category</h2><ul class="tg">{catlinks("en")}<li><a href="/en/portrait/">Portraits</a></li><li><a href="/en/expression/">Expressions</a></li><li><a href="/en/tag/">Outfit tags</a></li></ul></section>
 <section class="sec"><h2>Outfits</h2><ul class="cg">{featured("en")}</ul></section>
 <section class="sec"><h2>Poses</h2><ul class="cg">{"".join(cardli("en","pose",p) for p in SP[:12])}</ul></section>
 <section class="sec"><h2>About the images</h2><p class="lead">The code is open source (MIT, <a href="https://github.com/atuizz/posewear">GitHub</a>). Pose and outfit images come from AI Pose Gallery / AI Costume Gallery by <a href="https://x.com/giaaibusi">@giaaibusi</a> — no license is stated, so ask the author before reuse. Portraits come from AI Portrait Gallery by <a href="https://x.com/agi_aibusi">@agi_aibusi</a> under <a href="{CC0}" rel="license">CC0 1.0</a>. The app interface is in Chinese, with prompts available in English.</p></section></div>'''
 W('/en/',shell('en','/','PoseWear – Pose & Outfit Reference Library with AI Prompts and Online Try-On',en_desc,body,ENLD))
 add('pages','/',TODAY)
 # ---- 中文首页：标题、描述、真实数字、前 N 项静态卡片、JSON-LD、hreflang ----
-HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR));HA=dict(pose=len(poses),ang=NA,cos=len(cos),por=len(pors))  # 首页计数唯一来源；改公开数：HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR))
-zh_desc=f"衣姿 PoseWear：{HC['pose']} 组姿势（{HC['ang']:,} 张角度图）、{HC['cos']:,} 套服装、{HC['por']:,} 张人像参考图，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
+HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR),expr=len((EXPR or {}).get('public_items') or []));HA=dict(pose=len(poses),ang=NA,cos=len(cos),por=len(pors),expr=HC['expr'])  # 首页计数唯一来源；改公开数：HC=dict(pose=len(SP),ang=NA_PUB,cos=len(SC),por=len(SR))
+zh_desc=f"衣姿 PoseWear：{HC['pose']} 组姿势（{HC['ang']:,} 张角度图）、{HC['cos']:,} 套服装、{HC['por']:,} 张人像、{HC['expr']} 个表情参考，附中英文提示词，可上传照片在线 AI 试穿。免费，无需注册。"
 zhttl='衣姿 PoseWear · 姿势、服装、人像参考图库 | 中英文提示词 + 在线 AI 试穿'
 idx=open(f'{D}/index.html').read()
 idx=re.sub(r'<title>.*?</title>',f'<title>{zhttl}</title>',idx,1)
@@ -218,9 +218,9 @@ idx=idx.replace('<link rel="canonical" href="https://posewear.pages.dev/">','<li
 LD=[{"@type":"WebSite","@id":SITE+'/#website',"url":SITE+'/',"name":"衣姿 PoseWear","alternateName":["PoseWear","衣姿"],"inLanguage":"zh-CN","description":zh_desc,
   "potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
  {"@type":"WebApplication","name":"衣姿 PoseWear","url":SITE+'/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en"],
-  "offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"description":zh_desc,"image":SITE+'/og.png',"isAccessibleForFree":True,"featureList":["姿势参考图（多角度）","服装穿搭参考图","人像脸模参考（CC0）","中英文提示词","在线 AI 试穿"]}]
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"description":zh_desc,"image":SITE+'/og.png',"isAccessibleForFree":True,"featureList":["姿势参考图（多角度）","服装穿搭参考图","人像脸模参考（CC0）","表情参考（按角度分组，可与姿势组合）","中英文提示词","在线 AI 试穿"]}]
 idx=idx.replace('</head>',f'<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":LD},ensure_ascii=False,separators=(",",":"))}</script></head>',1)
-HOME_COUNTS=[('288','pose'),('1439','ang'),('1407','cos'),('1499','por')]
+HOME_COUNTS=[('288','pose'),('1439','ang'),('1407','cos'),('1499','por'),('24','expr')]
 for a,k in HOME_COUNTS:
   idx=idx.replace(f'<b data-n="{a}">0</b>',f'<b data-n="{HC[k]}" data-na="{HA[k]}">{HC[k]:,}</b>')
 def ssr(p):
@@ -228,10 +228,12 @@ def ssr(p):
     f'<div class="info"><h3><a href="/pose/{p["id"]}/">{E(t)}</a></h3><div class="sub">{E(p["cat"])} · {len(a)} 个角度</div><div class="tags"><span class="tag">{E(p["line"])}</span><span class="tag c">{E(p["cat"])}</span></div></div></article>')
 g=re.search(r'(<main id="grid"[^>]*>)(.*?)(</main>)',idx,re.S)
 idx=idx[:g.start(2)]+''.join(ssr(p) for p in SP[:12])+idx[g.end(2):]
-nav='<nav class="seoc" aria-label="分类浏览"><div><h4>姿势分类</h4>'+''.join(f'<a href="/pose/{s}/">{z}</a>' for s,z,e,L in CATS['pose'])+'</div><div><h4>服装分类</h4>'+''.join(f'<a href="/costume/{s}/">{z}</a>' for s,z,e,L in CATS['costume'])+'<a href="/tag/">按单品和颜色</a></div><div><h4>人像</h4>'+''.join(f'<a href="/portrait/{s}/">{z}</a>' for s,z,e,L in CATS['portrait'])+'</div><div><h4>其他</h4><a href="/pose/">姿势图库</a><a href="/costume/">服装图库</a><a href="/portrait/">人像图库</a><a href="/en/" hreflang="en" lang="en">English</a></div></nav>'
+nav='<nav class="seoc" aria-label="分类浏览"><div><h4>姿势分类</h4>'+''.join(f'<a href="/pose/{s}/">{z}</a>' for s,z,e,L in CATS['pose'])+'</div><div><h4>服装分类</h4>'+''.join(f'<a href="/costume/{s}/">{z}</a>' for s,z,e,L in CATS['costume'])+'<a href="/tag/">按单品和颜色</a></div><div><h4>人像</h4>'+''.join(f'<a href="/portrait/{s}/">{z}</a>' for s,z,e,L in CATS['portrait'])+'</div><div><h4>其他</h4><a href="/pose/">姿势图库</a><a href="/costume/">服装图库</a><a href="/portrait/">人像图库</a><a href="/expression/">表情图库</a><a href="/en/" hreflang="en" lang="en">English</a></div></nav>'
 idx=idx.replace('<footer class="foot">',nav+'<footer class="foot">',1)
 open(f'{D}/index.html','w').write(idx)
 # ---- 站点地图 ----
+import expr as _expr
+_expr.write_seo(globals())
 def smx(L,img=True):
   out=['<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n']
   for u,lm,ims in L:

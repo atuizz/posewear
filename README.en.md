@@ -60,6 +60,8 @@ python3 -m http.server 8787 -d dist
 
 Set `POSEWEAR_RAW` to use a different asset folder, and `POSEWEAR_SITE` to set your own site URL for the sitemap and share links.
 
+Expression packs live in `expressions/packs/`. The face model is ICT-FaceKit **Light** only, pinned to commit `da5f95a607f5e6b37755b38d3385d7f2853732e5`. Each pack includes `THIRD_PARTY_LICENSES.txt`. The images currently in the repo are placeholders. Import a real pack with `python3 scripts/import-expressions.py <dir-or-zip>`. PoseWear does not charge and has no paid tier. See the Chinese README for the manifest spec. Adult expressions stay hidden until a separate 18+ confirmation.
+
 ## Deploy
 
 The repository ships without assets, so build locally first, then upload `dist/` to Cloudflare Pages:
