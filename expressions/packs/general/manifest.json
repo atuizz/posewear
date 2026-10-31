@@ -1,0 +1,119 @@
+{
+  "version": "0.2.0-mock",
+  "license": "MIT. Face model: ICT-FaceKit Light only, Copyright (c) 2020 USC Institute for Creative Technologies. https://github.com/ICT-VGL/ICT-FaceKit @ da5f95a607f5e6b37755b38d3385d7f2853732e5. Full text: THIRD_PARTY_LICENSES.txt.",
+  "model": "ICT-FaceKit",
+  "placeholder": true,
+  "note": "当前图片是占位图（scripts/make-expr-mocks.py 生成），不是 ICT-FaceKit 的渲染结果。正式素材放到 posewear-expressions-v2 后，用 scripts/import-expressions.py 导入替换。",
+  "upstream": {
+    "repo": "https://github.com/ICT-VGL/ICT-FaceKit",
+    "variant": "Light",
+    "commit": "da5f95a607f5e6b37755b38d3385d7f2853732e5"
+  },
+  "source": "占位图。模型锁定 ICT-FaceKit Light @ da5f95a607f5e6b37755b38d3385d7f2853732e5。正式渲染用导入命令替换，仍只用 Light。",
+  "author": "衣姿 PoseWear",
+  "url": "https://github.com/ICT-VGL/ICT-FaceKit",
+  "id": "general",
+  "name_zh": "通用表情",
+  "name_en": "General expressions",
+  "gated": false,
+  "items": [
+    {
+      "id": "happy_front",
+      "name_zh": "开心",
+      "name_en": "happy",
+      "tags": [
+        "正面情绪",
+        "笑",
+        "正面"
+      ],
+      "angle": "front",
+      "group": "happy",
+      "prompt_zh": "灰色人台头，正面，开心，嘴角上扬。",
+      "prompt_en": "gray mannequin head, front view, happy smile.",
+      "w": 900,
+      "h": 1200,
+      "pack": "general",
+      "blendshape_weights": {
+        "mouthSmile_L": 0.7,
+        "mouthSmile_R": 0.7,
+        "cheekSquint_L": 0.35,
+        "cheekSquint_R": 0.35
+      },
+      "source": "source/happy_front.png",
+      "depth": "depth/happy_front.png",
+      "landmarks": "landmarks/happy_front.png"
+    },
+    {
+      "id": "happy_three_quarter",
+      "name_zh": "开心",
+      "name_en": "happy",
+      "tags": [
+        "正面情绪",
+        "笑",
+        "3/4 侧"
+      ],
+      "angle": "three_quarter",
+      "group": "happy",
+      "prompt_zh": "灰色人台头，斜侧，开心，嘴角上扬。",
+      "prompt_en": "gray mannequin head, three-quarter view, happy smile.",
+      "w": 900,
+      "h": 1200,
+      "pack": "general",
+      "blendshape_weights": {
+        "mouthSmile_L": 0.7,
+        "mouthSmile_R": 0.55,
+        "cheekSquint_L": 0.3,
+        "cheekSquint_R": 0.2
+      },
+      "source": "source/happy_three_quarter.png",
+      "depth": "depth/happy_three_quarter.png",
+      "landmarks": "landmarks/happy_three_quarter.png"
+    },
+    {
+      "id": "calm_front",
+      "name_zh": "平静",
+      "name_en": "calm",
+      "tags": [
+        "中性情绪",
+        "正面"
+      ],
+      "angle": "front",
+      "group": "calm",
+      "prompt_zh": "灰色人台头，正面，平静，嘴巴放松。",
+      "prompt_en": "gray mannequin head, front view, calm relaxed mouth.",
+      "w": 900,
+      "h": 1200,
+      "pack": "general",
+      "blendshape_weights": {
+        "eyeBlink_L": 0.05,
+        "eyeBlink_R": 0.05
+      },
+      "source": "source/calm_front.png",
+      "depth": "depth/calm_front.png",
+      "landmarks": "landmarks/calm_front.png"
+    },
+    {
+      "id": "calm_three_quarter",
+      "name_zh": "平静",
+      "name_en": "calm",
+      "tags": [
+        "中性情绪",
+        "3/4 侧"
+      ],
+      "angle": "three_quarter",
+      "group": "calm",
+      "prompt_zh": "灰色人台头，斜侧，平静，嘴巴放松。",
+      "prompt_en": "gray mannequin head, three-quarter view, calm.",
+      "w": 900,
+      "h": 1200,
+      "pack": "general",
+      "blendshape_weights": {
+        "eyeBlink_L": 0.05,
+        "eyeBlink_R": 0.05
+      },
+      "source": "source/calm_three_quarter.png",
+      "depth": "depth/calm_three_quarter.png",
+      "landmarks": "landmarks/calm_three_quarter.png"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from costume_text import gen2
 import hashlib,re,html as H
 from concurrent.futures import ProcessPoolExecutor
 from PIL import Image
+import expr
 # 素材目录：默认 ./assets-raw，可用环境变量 POSEWEAR_RAW 指定（见 scripts/fetch-assets.py）
 R=os.environ.get('POSEWEAR_RAW','assets-raw'); D='dist'
 LINE={'全身1人・セクシー系':('全身·性感','full body, solo, sexy'),'全身1人・標準系':('全身·标准','full body, solo'),'上半身1人':('上半身','upper body, solo'),'2人絡み':('双人互动','two people, couple')}
@@ -92,5 +93,8 @@ if os.path.exists(f'{D}/p/t'):
   for f in os.listdir(f'{D}/p/t'):
     if f.endswith('.jpg'): os.remove(f'{D}/p/t/{f}')
 with ProcessPoolExecutor() as ex: list(ex.map(cv,pd)); list(ex.map(cm,cd)); list(ex.map(cr,rd))
+EXPR=expr.build(D)
+EJ=J(EXPR['public'])
+GJ=J(EXPR['gated']) if EXPR.get('gated') else ''
 exec(open('post.py').read())
 print(len(poses),len(cos))

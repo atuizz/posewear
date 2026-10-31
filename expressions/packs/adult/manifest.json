@@ -1,0 +1,80 @@
+{
+  "version": "0.2.0-mock",
+  "license": "MIT. Face model: ICT-FaceKit Light only, Copyright (c) 2020 USC Institute for Creative Technologies. https://github.com/ICT-VGL/ICT-FaceKit @ da5f95a607f5e6b37755b38d3385d7f2853732e5. Full text: THIRD_PARTY_LICENSES.txt.",
+  "model": "ICT-FaceKit",
+  "placeholder": true,
+  "note": "当前图片是占位图（scripts/make-expr-mocks.py 生成），不是 ICT-FaceKit 的渲染结果。正式素材放到 posewear-expressions-v2 后，用 scripts/import-expressions.py 导入替换。",
+  "upstream": {
+    "repo": "https://github.com/ICT-VGL/ICT-FaceKit",
+    "variant": "Light",
+    "commit": "da5f95a607f5e6b37755b38d3385d7f2853732e5"
+  },
+  "source": "占位图。模型锁定 ICT-FaceKit Light @ da5f95a607f5e6b37755b38d3385d7f2853732e5。正式渲染用导入命令替换，仍只用 Light。",
+  "author": "衣姿 PoseWear",
+  "url": "https://github.com/ICT-VGL/ICT-FaceKit",
+  "id": "adult",
+  "name_zh": "成人向表情",
+  "name_en": "Adult expressions",
+  "gated": true,
+  "ageGate": "18+",
+  "badge": "18+",
+  "switch": "成人表情",
+  "gateTitle": "显示成人向表情？",
+  "gateBody": "这些是 18+ 的面部表情，只有灰色人台头，没有身体，也没有裸露。仅适合已满 18 岁的用户。",
+  "confirm": "我已满 18 岁，打开",
+  "cancel": "暂不",
+  "noticeZh": "18+ 面部表情。灰色人台头，没有身体，没有裸露。",
+  "noticeEn": "18+ facial expression. Gray mannequin head only, no body and no nudity.",
+  "items": [
+    {
+      "id": "smirk_front",
+      "name_zh": "坏笑",
+      "name_en": "smirk",
+      "tags": [
+        "正面情绪",
+        "单侧",
+        "正面"
+      ],
+      "angle": "front",
+      "group": "smirk",
+      "prompt_zh": "灰色人台头，正面，一侧挑眉、嘴角单边上扬。",
+      "prompt_en": "gray mannequin head, front view, one-sided smirk.",
+      "w": 900,
+      "h": 1200,
+      "pack": "adult",
+      "blendshape_weights": {
+        "mouthSmile_L": 0.85,
+        "browOuterUp_L": 0.45,
+        "eyeSquint_L": 0.35
+      },
+      "source": "source/smirk_front.png",
+      "depth": "depth/smirk_front.png",
+      "landmarks": "landmarks/smirk_front.png"
+    },
+    {
+      "id": "smirk_three_quarter",
+      "name_zh": "坏笑",
+      "name_en": "smirk",
+      "tags": [
+        "正面情绪",
+        "单侧",
+        "3/4 侧"
+      ],
+      "angle": "three_quarter",
+      "group": "smirk",
+      "prompt_zh": "灰色人台头，斜侧，一侧挑眉、嘴角单边上扬。",
+      "prompt_en": "gray mannequin head, three-quarter view, one-sided smirk.",
+      "w": 900,
+      "h": 1200,
+      "pack": "adult",
+      "blendshape_weights": {
+        "mouthSmile_L": 0.8,
+        "browOuterUp_L": 0.4,
+        "eyeSquint_L": 0.3
+      },
+      "source": "source/smirk_three_quarter.png",
+      "depth": "depth/smirk_three_quarter.png",
+      "landmarks": "landmarks/smirk_three_quarter.png"
+    }
+  ]
+}

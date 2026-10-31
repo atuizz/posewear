@@ -502,4 +502,32 @@ button:active:not(:disabled){transform:scale(.97)}.tabs button:active,.chip:acti
 .grid:empty{min-height:0}
 
 .ssr .ssl{display:block;height:100%}.ssr .ph{cursor:pointer}.ssr h3 a{color:inherit;text-decoration:none}
+/* 表情库 */
+body.xlib .filters .frow{display:flex}
+.ph.expr{background:#1a1a1a}
+.ph.expr::before{background-color:#1a1a1a}
+.ph.expr img{object-fit:contain;mix-blend-mode:normal;padding:0;background:#1a1a1a}
+.badge.gate{top:auto;bottom:10px;background:var(--ac);color:#fff}
+.card.gated .ph{box-shadow:inset 0 0 0 2px var(--ac)}
+.rgrp.gate{color:var(--ac)}
+#lb.xview .lb-img{background:#141414}
+#lb.xview .lb-img img{mix-blend-mode:normal}
+.xcombo{max-width:var(--w);margin:0 auto 12px;padding:0 24px}
+.xcombo .xh,#xBody{background:var(--bg2);border:1px solid var(--line)}
+.xh{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px 16px 0 0}
+.xcombo.min #xBody{display:none}
+.xcombo.min .xh{border-radius:16px}
+#xBody{padding:12px 14px 14px;border-radius:0 0 16px 16px;border-top:0}
+.xgrid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+.xslot{display:flex;gap:8px;align-items:center;min-height:76px;margin:6px 0;position:relative}
+.xslot img{width:54px;height:72px;object-fit:cover;border-radius:10px;background:#1a1a1a}
+#xPrompt{width:100%;margin:8px 0;border:0;border-radius:12px;background:var(--sf);color:var(--tx);padding:10px 12px;font:13px/1.7 var(--sans);resize:vertical}
+#xHint.warn{color:var(--ac)}
+#exprGate{display:inline-flex;gap:6px}
+#exprGate .asw{height:34px}
+#xpk{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:24px}
+#xpk[hidden]{display:none}
+#xpk .pk-box{width:min(860px,100%);max-height:min(80vh,760px);background:var(--bg2);border-radius:20px;display:flex;flex-direction:column;overflow:hidden}
+@media(max-width:760px){.xcombo{padding:0 12px}.xgrid{grid-template-columns:1fr}#xHint{display:none}.badge.gate{bottom:8px;left:8px}}
+
 .seoc{max-width:var(--w);margin:0 auto;padding:28px 24px 8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;border-top:1px solid var(--line);font-size:13px}.seoc h4{margin:0 0 8px;font-size:13px;color:var(--mu);font-weight:600}.seoc a{display:inline-block;margin:0 12px 6px 0;color:inherit;text-decoration:none}.seoc a:hover{text-decoration:underline}

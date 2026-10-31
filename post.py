@@ -7,20 +7,22 @@ A={}
 def put(name,data):
   b=data.encode() if isinstance(data,str) else data
   base,ext=name.rsplit('.',1);n=f'assets/{base}.{h8(b)}.{ext}';open(f'{D}/{n}','wb').write(b);A[name]=n;return n
-put('poses.json',PJ);put('costumes.json',CJ);put('portraits.json',RJ)
-for f in ['style.css','zip.js','extras.js','studio.js']: put(f,open(f'src/{f}','rb').read())
-app=open('src/app.js').read().replace("'poses.json'","'/"+A['poses.json']+"'").replace("'costumes.json'","'/"+A['costumes.json']+"'").replace("'portraits.json'","'/"+A['portraits.json']+"'")
+if GJ:
+  gn=put('expressions-gated.json',GJ);EJ=EJ.replace('__EXPR_GATED__','/'+gn)
+put('poses.json',PJ);put('costumes.json',CJ);put('portraits.json',RJ);put('expressions.json',EJ)
+for f in ['style.css','zip.js','extras.js','studio.js','expr.js']: put(f,open(f'src/{f}','rb').read())
+app=open('src/app.js').read().replace("'poses.json'","'/"+A['poses.json']+"'").replace("'costumes.json'","'/"+A['costumes.json']+"'").replace("'portraits.json'","'/"+A['portraits.json']+"'").replace("'expressions.json'","'/"+A['expressions.json']+"'")
 put('app.js',app)
 VER='posewear-v10-'+h8(''.join(A.values()))
 idx=open('src/index.html').read()
-for f in ['style.css','app.js','zip.js','extras.js','studio.js']:
+for f in ['style.css','app.js','zip.js','extras.js','studio.js','expr.js']:
   idx=idx.replace(f'"{f}"',f'"/{A[f]}"')
 idx=idx.replace('href="poses.json"',f'href="/{A["poses.json"]}"')
 open(f'{D}/index.html','w').write(idx)
-for f in ['style.css','app.js','zip.js','extras.js','studio.js']:
+for f in ['style.css','app.js','zip.js','extras.js','studio.js','expr.js']:
   if os.path.exists(f'{D}/{f}'): os.remove(f'{D}/{f}')
 sw=open('src/sw.js').read().replace("const V='posewear-v9'",f"const V='{VER}'")
-sw=sw.replace("['./','index.html','style.css','app.js','studio.js','extras.js','zip.js','favicon.svg']",json.dumps(['/','/favicon.svg']+['/'+A[f] for f in ['style.css','app.js','studio.js','extras.js','zip.js','poses.json']]))
+sw=sw.replace("['./','index.html','style.css','app.js','studio.js','extras.js','zip.js','favicon.svg']",json.dumps(['/','/favicon.svg']+['/'+A[f] for f in ['style.css','app.js','studio.js','extras.js','expr.js','zip.js','poses.json','expressions.json']]))
 open(f'{D}/sw.js','w').write(sw)
 import base64
 inl=re.findall(r'<script>(.*?)</script>',idx,re.S)
@@ -108,5 +110,16 @@ open(f'{D}/_headers','w').write(f'''/*
   Cache-Control: public, max-age=600
 /portrait/*
   Cache-Control: public, max-age=600
+/expression/*
+  Cache-Control: public, max-age=600
+/e/*
+  Cache-Control: public, max-age=31536000, immutable
 ''')
 exec(open('seo.py').read())
+open(f'{D}/_headers','a').write('''/e/gated/*
+  Cache-Control: private, no-store
+/o/e/gated/*
+  Cache-Control: private, no-store
+/assets/expressions-gated*
+  Cache-Control: private, no-store
+''')

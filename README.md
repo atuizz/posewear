@@ -31,7 +31,7 @@
 
 | | |
 |---|---|
-| **三大素材库** | 姿势（多角度线稿）、服装（按季节和类型分类）、人像（脸模参考，CC0）。每张图都有中文描述和英文提示词 |
+| **四大素材库** | 姿势（多角度线稿）、服装（按季节和类型分类）、人像（脸模参考，CC0）、表情（灰色人台头，原图 / 深度图 / 线稿）。每张图都有中文描述和英文提示词 |
 | **搜索与筛选** | 中英文关键词、分类、排序、随机一张；每个素材有独立详情页，方便分享 |
 | **试穿工作台** | 上传人物照，选服装和姿势，生成试穿图，或不用照片直接出图；一次可出多张，有前后对比、单张下载和打包下载 |
 | **多家服务商** | OpenAI、Gemini、豆包 Seedream、OpenAI 兼容的自定义中转，见下表 |
@@ -113,15 +113,19 @@ U=https://posewear.pages.dev node tests/v12.js   # 直接测线上
 ```
 src/                    前端源码，无框架
   app.js                图库、搜索筛选、收藏最近、灯箱、路由
+  expr.js               表情：年龄门槛、三种视图下载、姿势组合
   studio.js             试穿工作台：服务商适配、进度、结果、历史、减少误拦截
   extras.js             批量操作、导入导出
   style.css             样式（含深色模式）
   sw.js / zip.js        离线缓存 / 打包下载
 functions/api/proxy.js  Pages Function，转发 API 请求
 build.py / post.py      生成缩略图、数据、详情页、sitemap、_headers
+expr.py                 表情字段映射、校验、缩略图、expressions.json
 costume_text.py         服装中英文描述
 words.txt, tr_*.txt     词表与中英文翻译
-scripts/                fetch-assets.py 下载素材，make-icons.js 生成图标
+scripts/                fetch-assets.py 下载姿势/服装/人像；import-expressions.py 导入表情包
+expressions/packs/      表情包（当前是占位图，正式渲染用导入命令替换）
+LICENSES/               第三方许可全文，含 ICT-FaceKit
 tests/                  Playwright 测试
 docs/                   README 用图
 ```
@@ -169,7 +173,64 @@ Key 只存在你浏览器的 localStorage 里，可在设置里清除。默认�
 2. 改动前端后运行 `python3 build.py` 和 `node tests/v12.js && node tests/v13.js`；
 3. PR 里说明改了什么，界面改动附截图。
 
-文案请保持口语、简洁；不提交任何素材图片或密钥。
+文案请保持口语、简洁。姿势、服装、人像图片不要提交。表情包放在 `expressions/packs/`，用下面的导入命令更新。不要加收费、付费墙或商业授权。
+
+## 表情素材
+
+衣姿是开源的非商业项目，不收款，没有付费内容。表情和姿势、服装、人像同级。网格默认按角度分组，同一个表情的不同角度不会挨在一起。可以按标签筛选、搜索，并在原图、深度图、线稿之间切换。选一个姿势角度再配一个表情：俯拍、仰拍没有同角度素材时退回正面，侧面退回斜侧，页面会提示，并给出中英文提示词和参考包。
+
+人脸模型只用 [ICT-FaceKit](https://github.com/ICT-VGL/ICT-FaceKit) 的 **Light** 版本，锁定提交 `da5f95a607f5e6b37755b38d3385d7f2853732e5`（master，2020-12-01，Merge pull request #15）。不使用 Full ICT Face Model。版权是 Copyright (c) 2020 USC Institute for Creative Technologies，MIT。仓库根目录的 [LICENSES/ICT-FaceKit.txt](LICENSES/ICT-FaceKit.txt) 是同一份许可；每个包目录里还必须有自己的 `THIRD_PARTY_LICENSES.txt`（含许可全文、仓库 URL 和这个 commit）。单张下载和参考包的 zip 也会带上这份文件。
+
+仓库里现在的图是占位，由 `scripts/make-expr-mocks.py` 生成，不是该提交的渲染结果。正式的 v0.2 素材用一条命令导入：
+
+```bash
+python3 scripts/import-expressions.py /path/to/posewear-expressions-v2
+python3 scripts/validate-expressions.py    # 可选。build.py 会再校验，有错误就中断
+python3 build.py
+```
+
+目录、zip 都可以。三种布局都能认：一个包（目录里一份 manifest.json）、多个包（子目录各一份）、一份合并清单（条目用 `pack` 区分，可用 `packConfig` 给每个包写 gated / license / upstream）。`README.md` 和 `contact_sheet.png` 不会复制，也不会进站点。图片按原样复制。导入时如果包里还没有 `THIRD_PARTY_LICENSES.txt`，会按 manifest 的 `upstream` 生成一份；没有 commit 则校验失败，不会替换已有的包。
+
+### 包
+
+每个包是 `expressions/packs/<id>/`。`id` 必须和目录名、条目里的 `pack` 一致。包自己带 `license`、`source`、`url` 和 `upstream`。要年龄限制就在 manifest 里声明，不用改代码：
+
+```json
+{
+  "id": "adult",
+  "gated": true,
+  "ageGate": "18+",
+  "badge": "18+",
+  "switch": "成人表情",
+  "gateTitle": "显示成人向表情？",
+  "gateBody": "这些是 18+ 的面部表情，只有灰色人台头，没有身体，也没有裸露。",
+  "confirm": "我已满 18 岁，打开",
+  "cancel": "暂不",
+  "upstream": {
+    "repo": "https://github.com/ICT-VGL/ICT-FaceKit",
+    "variant": "Light",
+    "commit": "da5f95a607f5e6b37755b38d3385d7f2853732e5"
+  }
+}
+```
+
+`gated: true` 的包默认不进网格、搜索、筛选、详情页、sitemap、当前筛选的 zip，也不进 `sw.js` 预缓存。打开前要确认年龄，结果记在 `localStorage.exprGates`，和姿势服装的「18+」开关分开。关掉开关或点撤销就会再藏起来。
+
+`build.py` 会检查每个包都有 `THIRD_PARTY_LICENSES.txt`，并且 `upstream.commit` 非空。`model` 为 ICT-FaceKit 时，`variant` 必须是 `Light`，commit 必须是 40 位 SHA，许可文件里要写明仓库 URL 和这个 commit。
+
+### manifest 条目
+
+必填：`id`、`name_zh`、`tags`、`angle`、`pack`、`w`、`h`、`source`、`depth`、`landmarks`。
+
+可选：`name_en`、`group`、`prompt_zh`、`prompt_en`、`blendshape_weights`。
+
+`blendshape_weights` 是对象，键是 ICT-FaceKit 的 blendshape 名（标识符，如 `mouthSmile_L`），值是 0 到 1 的数。不校验名字是否在固定列表里，所以新增形态不用改代码。
+
+`angle` 不限制枚举。已知的 `front`、`three_quarter`、`side`、`high`、`low` 会显示成正面、斜侧、侧面、俯拍、仰拍。新角度写在包的 `angles` 里即可，例如 `"bird": {"zh":"鸟瞰","en":"bird view","pose":"俯拍"}`；不写就原样显示。标签里如果混进「正面」「3/4 侧」这类角度词，展示时会去掉。
+
+构建还会检查：必填字段、id 全局唯一、文件都在包目录内、尺寸和 manifest 的 `w`/`h` 一致、原图是 RGB、深度图是 8 位单通道（白为近）、线稿是灰度。任何一条失败，`build.py` 直接退出。
+
+字段名只在 `expr.py` 的 `FIELDS` 映射一次。站点读的是构建出的 `expressions.json`，不是 manifest 原字段。
 
 ## 致谢
 
@@ -185,7 +246,7 @@ Key 只存在你浏览器的 localStorage 里，可在设置里清除。默认�
 | 代码、页面文案、构建脚本 | 是 | [MIT](LICENSE) |
 | 姿势、服装图片和原始数据 | 否，由 `fetch-assets.py` 从原站下载 | 归原作者 [@giaaibusi](https://x.com/giaaibusi) 所有（[AI Pose Gallery](https://ai-pose-gallery.pages.dev/) / [AI Costume Gallery](https://ai-costume-gallery.pages.dev/)），原站未标明开放许可 |
 | 人像图片 | 否，同上 | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/deed.zh-hans)，作者 [@agi_aibusi](https://x.com/agi_aibusi)（[AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/)） |
-| README 截图 | 是 | 截图里的图片素材同上，归各自作者 |
+| 表情图片与 manifest | 是，`expressions/packs/`（当前为占位图） | 人脸模型 [ICT-FaceKit](https://github.com/ICT-VGL/ICT-FaceKit)，[MIT](LICENSES/ICT-FaceKit.txt)，Copyright (c) 2020 USC Institute for Creative Technologies。占位图不是该模型的渲染，正式素材导入后替换 |
 
 - MIT 只覆盖代码，不覆盖任何图片和数据。
 - 想转载、商用或二次分发姿势、服装图片，请先联系原作者 @giaaibusi，以原站说明为准。
