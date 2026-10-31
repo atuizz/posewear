@@ -96,7 +96,7 @@ Issues and PRs are welcome. Run `python3 build.py` and both test files before yo
 
 ## Acknowledgements
 
-[AI Pose Gallery](https://ai-pose-gallery.pages.dev/) · [AI Costume Gallery](https://ai-costume-gallery.pages.dev/) by [@giaaibusi](https://x.com/giaaibusi) · [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/) by [@agi_aibusi](https://x.com/agi_aibusi) (CC0) · [wzc520pyfm/gen-ai-pose-image](https://github.com/wzc520pyfm/gen-ai-pose-image) · [paipiange/nvzhuang](https://github.com/paipiange/nvzhuang)
+[AI Pose Gallery](https://ai-pose-gallery.pages.dev/) · [AI Costume Gallery](https://ai-costume-gallery.pages.dev/) by [@giaaibusi](https://x.com/giaaibusi) · [AI Pose Depth Gallery](https://ai-pose-depth-gallery.pages.dev/) by [ギア / @giaaibusi](https://x.com/giaaibusi) (hotlinked, unofficial Chinese index; images are not in this repo) · [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/) by [@agi_aibusi](https://x.com/agi_aibusi) (CC0) · [wzc520pyfm/gen-ai-pose-image](https://github.com/wzc520pyfm/gen-ai-pose-image) · [paipiange/nvzhuang](https://github.com/paipiange/nvzhuang)
 
 ## License and asset boundaries
 
@@ -105,6 +105,8 @@ Issues and PRs are welcome. Run `python3 build.py` and both test files before yo
 | Code, UI copy, build scripts | Yes | [MIT](LICENSE) |
 | Pose and outfit images and data | No — downloaded by `fetch-assets.py` | Owned by [@giaaibusi](https://x.com/giaaibusi) ([AI Pose Gallery](https://ai-pose-gallery.pages.dev/) / [AI Costume Gallery](https://ai-costume-gallery.pages.dev/)); no open license is stated |
 | Portrait images | No — same as above | [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) by [@agi_aibusi](https://x.com/agi_aibusi) ([AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/)) |
+| Depth-pose images | No — hotlinked with `<img>` from [AI Pose Depth Gallery](https://ai-pose-depth-gallery.pages.dev/) | Owned by [ギア / @giaaibusi](https://x.com/giaaibusi). This repo only has the text metadata and Chinese names |
+| Depth-pose text metadata | Yes, `depth/packs/` | Japanese text belongs to the original author; Chinese names are ours |
 | README screenshots | Yes | The pictures shown belong to their authors as above |
 
 - MIT covers the code only, not any image or data.

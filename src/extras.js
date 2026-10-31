@@ -25,27 +25,27 @@ bb.onclick=async e=>{const t=e.target.closest('[data-b]');if(!t)return;const its
  if(m=='x')return batch(false);if(m=='all'){$$('#grid .card').forEach(c=>{c.classList.add('picked');B.add(c.dataset.k)});return bbar()}
  if(m=='fav'){let n=0;its.forEach(it=>{if(!A.st.fav.has(it.k)){A.st.fav.add(it.k);n++}});SV('fav',[...A.st.fav]);$('#nFav').textContent=A.st.fav.size;pop(favTab());A.toast(`已收藏 ${n} 项`);batch(false);A.apply()}
  if(m=='unfav'){its.forEach(it=>A.st.fav.delete(it.k));SV('fav',[...A.st.fav]);const n=its.length,ks=its.map(i=>i.k);batch(false);A.apply();$('#nFav').textContent=A.st.fav.size||'';A.toast(`已取消 ${n} 项收藏`,()=>{ks.forEach(k=>A.st.fav.add(k));SV('fav',[...A.st.fav]);$('#nFav').textContent=A.st.fav.size;A.apply()})}
- if(m=='zip'){if(!its.length)return A.toast('先选几张');if(!window.makeZip)return;t.disabled=true;t.textContent='打包中…';try{const fs=[];for(const it of its.slice(0,60)){const u=A.big(it);const r=await fetch(u);if(r.ok)fs.push({name:`posewear-${it.type}-${it.id}.webp`,blob:await r.blob()})}window.X.dl(await makeZip(fs),`posewear-${A.st.tab}-${fs.length}.zip`);A.toast(`已打包 ${fs.length} 张`+(its.length>60?'（单次最多 60 张）':''))}catch(err){A.toast('打包失败，请重试')}t.disabled=false;t.textContent='打包下载'}
+ if(m=='zip'){const local=its.filter(it=>!it.ext);if(!local.length)return A.toast(its.length?'这些图片在原站，请前往原站查看':'先选几张');if(!window.makeZip)return;t.disabled=true;t.textContent='打包中…';try{const fs=[];for(const it of local.slice(0,60)){const u=A.big(it);const r=await fetch(u);if(r.ok)fs.push({name:`posewear-${it.type}-${it.id}.webp`,blob:await r.blob()})}window.X.dl(await makeZip(fs),`posewear-${A.st.tab}-${fs.length}.zip`);A.toast(`已打包 ${fs.length} 张`+(local.length>60?'（单次最多 60 张）':'')+(local.length<its.length?'，深度姿势请到原站查看':''))}catch(err){A.toast('打包失败，请重试')}t.disabled=false;t.textContent='打包下载'}
  if(m=='cp'){A.copy(its.map(it=>A.prompt(it,A.st.lang=='en'?'en':'zh')).join('\n'),`${its.length} 条提示词`)}
  if(m=='stu'){const p=its.filter(i=>i.type=='pose'),c=its.filter(i=>i.type=='costume'),r=its.filter(i=>i.type=='portrait');batch(false);for(const it of [...r.slice(0,3),...c.slice(0,1),...p.slice(0,6)])await window.WB.pick(it);if(!its.length)A.setTab('studio')}};
 addEventListener('keydown',e=>{if(e.key=='Escape'&&document.body.classList.contains('batch'))batch(false)});
 const _st=A.setTab;A.setTab=(...a)=>{if(document.body.classList.contains('batch'))batch(false);return _st(...a)};
 $('.tabs').addEventListener('click',()=>document.body.classList.contains('batch')&&batch(false),true);
 // —— 搜索建议
-const HOT={pose:['站姿','坐姿','回头','可爱','躺卧','跪立','俯拍','蹲姿'],costume:['连衣裙','黑色','泳装','针织','蕾丝','冬季','牛仔','高跟鞋'],portrait:['短发','波波','狼尾','刘海','卷','奶茶色','黑发','生活照']};
+const HOT={pose:['站姿','坐姿','回头','可爱','躺卧','跪立','俯拍','蹲姿'],depth:['站姿','坐姿','上半身','全身','俯拍','侧面','可爱','跪立'],costume:['连衣裙','黑色','泳装','针织','蕾丝','冬季','牛仔','高跟鞋'],portrait:['短发','波波','狼尾','刘海','卷','奶茶色','黑发','生活照']};
 const q=$('#q'),sg=document.createElement('div');sg.id='qsug';sg.hidden=true;q.parentNode.append(sg);
-function sgDraw(){const h=LS('qh')||[],v=q.value.trim(),tab=['costume','portrait'].includes(A.st.tab)?A.st.tab:'pose',hot=HOT[tab].filter(x=>!v||x.includes(v));
+function sgDraw(){const h=LS('qh')||[],v=q.value.trim(),tab=['costume','portrait','depth'].includes(A.st.tab)?A.st.tab:'pose',hot=(HOT[tab]||[]).filter(x=>!v||x.includes(v));
  sg.innerHTML=(h.length&&!v?`<div class="sgh"><small>最近搜索</small><button data-clr>清除</button></div><div class="sgc">${h.map(x=>`<button data-q="${A.esc(x)}">${A.esc(x)}</button>`).join('')}</div>`:'')+(hot.length?`<div class="sgh"><small>热门</small></div><div class="sgc">${hot.map((x,i)=>`<button data-q="${x}"><em>${i+1}</em>${x}</button>`).join('')}</div>`:'');sg.hidden=!sg.innerHTML}
 const saveQ=()=>{const v=q.value.trim();if(v.length<1)return;SV('qh',[v,...(LS('qh')||[]).filter(x=>x!=v)].slice(0,8))};
 q.addEventListener('focus',sgDraw);q.addEventListener('input',()=>{sgDraw();clearTimeout(q._h);q._h=setTimeout(saveQ,1500)});q.addEventListener('keydown',e=>{if(e.key=='Enter'){saveQ();sg.hidden=true;q.blur()}});
 q.addEventListener('blur',()=>setTimeout(()=>{sg.hidden=true},150));
-sg.addEventListener('mousedown',e=>e.preventDefault());sg.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.clr!=null){SV('qh',[]);return sgDraw()}if(A.st.tab!='pose'&&A.st.tab!='costume'&&b.dataset.q)A.setTab('pose');q.value=b.dataset.q;q.dispatchEvent(new Event('input'));saveQ();sg.hidden=true;q.blur()};
+sg.addEventListener('mousedown',e=>e.preventDefault());sg.onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.clr!=null){SV('qh',[]);return sgDraw()}if(!['pose','costume','portrait','depth'].includes(A.st.tab)&&b.dataset.q)A.setTab('pose');q.value=b.dataset.q;q.dispatchEvent(new Event('input'));saveQ();sg.hidden=true;q.blur()};
 // —— 计数动画
 const cnt=$('#count');new MutationObserver(()=>{if(!RM)cnt.animate([{opacity:.2,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:360,easing:EZ})}).observe(cnt,{childList:true,characterData:true,subtree:true});
 // —— 大图：相似推荐 / 下载 / 复制图片
 X.lb=it=>{const L=A.st.list,cols=new Set((it.zh||'').match(/[黑白红粉蓝灰绿黄紫金银棕米]/g)||[]);const sc=x=>it.type=='portrait'?(x.len==it.len?2:0)+(x.st&&x.st==it.st?4:0)+(x.sec==it.sec?1:0):(x.cat==it.cat?3:0)+(x.line&&x.line==it.line?1:0)+((x.zh||'').match(/[黑白红粉蓝灰绿黄紫金银棕米]/g)||[]).filter(c=>cols.has(c)).length;
  const s=L.map((x,i)=>[x,i]).filter(([x])=>x.k!=it.k&&x.type==it.type).map(([x,i])=>[x,i,sc(x)+Math.random()*.5]).sort((a,b)=>b[2]-a[2]).slice(0,8);
- const el=$('#lbSim');if(!el)return;el.innerHTML=s.length?`<small class="simh">相似推荐</small><div class="sim">${s.map(([x,i])=>`<button data-si="${i}" title="${A.esc(A.title(x))}"><img src="${A.thumb(x)}" alt="${A.esc(A.title(x))}" loading="lazy"></button>`).join('')}</div>`:''};
+ const el=$('#lbSim');if(!el)return;el.innerHTML=s.length?`<small class="simh">相似推荐</small><div class="sim">${s.map(([x,i])=>`<button data-si="${i}" title="${A.esc(A.title(x))}"><img src="${A.esc(A.thumb(x))}" alt="${A.esc(A.title(x))}" loading="lazy"${x.ref?` referrerpolicy="${A.esc(x.ref)}"`:''}></button>`).join('')}</div>`:''};
 async function curBlob(){const it=A.st.list[A.li()];const r=await fetch(A.big(it));return[await r.blob(),it]}
 $('#lbSide').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;
  if(b.dataset.si){const i=+b.dataset.si;A.lbOpen(i);if(!RM)$('#lbImg').animate([{opacity:0,transform:'scale(.97)'},{opacity:1,transform:'none'}],{duration:340,easing:EZ});return}

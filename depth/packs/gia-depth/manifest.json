@@ -1,0 +1,28 @@
+{
+  "id": "gia-depth",
+  "version": "1",
+  "name_zh": "深度姿势",
+  "name_en": "Depth poses",
+  "source": "hotlink",
+  "base": "https://ai-pose-depth-gallery.pages.dev/",
+  "site": "https://ai-pose-depth-gallery.pages.dev/",
+  "siteName": "ai-pose-depth-gallery",
+  "author": "ギア",
+  "authorUrl": "https://x.com/giaaibusi",
+  "credit": "素材来自 ai-pose-depth-gallery，作者ギア（https://x.com/giaaibusi）",
+  "unofficial": "非官方汉化",
+  "referrerPolicy": "no-referrer",
+  "note": "图片由原站托管，本站不保存。双人互动默认隐藏，需打开右上角「18+」并确认已满 18 岁。",
+  "items": "items.json",
+  "gatedLines": ["2人絡み"],
+  "fields": {
+    "id": "id",
+    "line": "系統",
+    "no": "ポーズ番号",
+    "cat": "分類",
+    "name": "ポーズ名",
+    "angle": "アングル",
+    "thumb": "サムネ",
+    "full": "原寸"
+  }
+}
