@@ -7,9 +7,9 @@ A={}
 def put(name,data):
   b=data.encode() if isinstance(data,str) else data
   base,ext=name.rsplit('.',1);n=f'assets/{base}.{h8(b)}.{ext}';open(f'{D}/{n}','wb').write(b);A[name]=n;return n
-put('poses.json',PJ);put('costumes.json',CJ);put('portraits.json',RJ)
+put('poses.json',PJ);put('costumes.json',CJ);put('portraits.json',RJ);put('depths.json',DJ)
 for f in ['style.css','zip.js','extras.js','studio.js']: put(f,open(f'src/{f}','rb').read())
-app=open('src/app.js').read().replace("'poses.json'","'/"+A['poses.json']+"'").replace("'costumes.json'","'/"+A['costumes.json']+"'").replace("'portraits.json'","'/"+A['portraits.json']+"'")
+app=open('src/app.js').read().replace("'poses.json'","'/"+A['poses.json']+"'").replace("'costumes.json'","'/"+A['costumes.json']+"'").replace("'portraits.json'","'/"+A['portraits.json']+"'").replace("'depths.json'","'/"+A['depths.json']+"'")
 put('app.js',app)
 VER='posewear-v10-'+h8(''.join(A.values()))
 idx=open('src/index.html').read()
@@ -20,7 +20,7 @@ open(f'{D}/index.html','w').write(idx)
 for f in ['style.css','app.js','zip.js','extras.js','studio.js']:
   if os.path.exists(f'{D}/{f}'): os.remove(f'{D}/{f}')
 sw=open('src/sw.js').read().replace("const V='posewear-v9'",f"const V='{VER}'")
-sw=sw.replace("['./','index.html','style.css','app.js','studio.js','extras.js','zip.js','favicon.svg']",json.dumps(['/','/favicon.svg']+['/'+A[f] for f in ['style.css','app.js','studio.js','extras.js','zip.js','poses.json']]))
+sw=sw.replace("['./','index.html','style.css','app.js','studio.js','extras.js','zip.js','favicon.svg']",json.dumps(['/','/favicon.svg']+['/'+A[f] for f in ['style.css','app.js','studio.js','extras.js','zip.js','poses.json','depths.json']]))
 open(f'{D}/sw.js','w').write(sw)
 import base64
 inl=re.findall(r'<script>(.*?)</script>',idx,re.S)
@@ -75,7 +75,8 @@ def page(kind,it,rel):
 open(f'{D}/404.html','w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>页面不存在 | 衣姿 PoseWear</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><style>{CSS}
 .nf{{max-width:480px;margin:12vh auto;text-align:center;padding:0 20px}}.nf b{{font-size:64px;color:#d81b3a;display:block;line-height:1}}</style></head><body><header><a href="/">{LOGO}衣姿 PoseWear</a></header>
 <div class="nf"><b>404</b><h1>这个页面不存在</h1><p class="mu">链接可能写错了，或者内容已经调整。</p><a class="go" href="/">回到首页</a><a class="go" style="background:#111" href="/#costume">看看服装库</a></div></body></html>''')
-CSP=("default-src 'self'; script-src 'self' "+SH+"; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; "
+_IMG=" ".join(["'self'","data:","blob:"]+list(DEPTH_ORIGINS))
+CSP=("default-src 'self'; script-src 'self' "+SH+"; style-src 'self' 'unsafe-inline'; img-src "+_IMG+"; font-src 'self' data:; "
  "connect-src 'self' data: blob: https://api.openai.com https://generativelanguage.googleapis.com https://*.volces.com https://*.bytepluses.com https://oaidalleapiprodscus.blob.core.windows.net https://*.googleusercontent.com; "
  "worker-src 'self'; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests")
 IMM='  Cache-Control: public, max-age=31536000, immutable\n'

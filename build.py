@@ -1,4 +1,4 @@
-import json,os,shutil,subprocess
+import json,os,shutil,subprocess,depthpack
 from costume_text import gen2
 import hashlib,re,html as H
 from concurrent.futures import ProcessPoolExecutor
@@ -92,5 +92,9 @@ if os.path.exists(f'{D}/p/t'):
   for f in os.listdir(f'{D}/p/t'):
     if f.endswith('.jpg'): os.remove(f'{D}/p/t/{f}')
 with ProcessPoolExecutor() as ex: list(ex.map(cv,pd)); list(ex.map(cm,cd)); list(ex.map(cr,rd))
+# 深度姿势：只解析素材包里的文本，热链包不复制图片（见 depthpack.py）
+_dc=depthpack.catalog(); DJ=J(_dc['payload']); DEPTH_ORIGINS=_dc['origins']
+for src,rel in _dc['copies']:
+  dest=f'{D}/{rel}'; os.makedirs(os.path.dirname(dest),exist_ok=True); shutil.copyfile(src,dest)
 exec(open('post.py').read())
-print(len(poses),len(cos))
+print(len(poses),len(cos),len(_dc['payload']['items']))
