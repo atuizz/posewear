@@ -41,7 +41,8 @@ body.scrolled .top{box-shadow:0 1px 0 var(--line)}
 .tools{display:flex;align-items:center;gap:4px;flex:none}
 #theme .moon{display:none}[data-theme=dark] #theme .sun{display:none}[data-theme=dark] #theme .moon{display:block}
 .hero{display:none}
-body.studio .bar,body.studio .filters,body.studio .grid,body.studio #empty,body.studio #sentinel,body.studio .top .search{display:none!important}
+body.studio .bar,body.studio .filters,body.studio #grid,body.studio #empty,body.studio #sentinel,body.studio .top .search{display:none!important}
+body.histview .bar,body.histview .filters,body.histview #grid,body.histview #empty,body.histview #sentinel,body.histview .top .search,body.histview .hero,body.histview .intro,body.histview .annbar,body.histview #toTop{display:none!important}
 /* toolbar + filters */
 .bar{position:sticky;top:calc(var(--hdr,72px) - 1px);z-index:20;max-width:var(--w);margin:0 auto;padding:6px 24px 10px;display:flex;align-items:center;gap:12px;background:var(--bg)}
 .tbar{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
@@ -535,3 +536,49 @@ button:active:not(:disabled){transform:scale(.97)}.tabs button:active,.chip:acti
 
 .ssr .ssl{display:block;height:100%}.ssr .ph{cursor:pointer}.ssr h3 a{color:inherit;text-decoration:none}
 .seoc{max-width:var(--w);margin:0 auto;padding:28px 24px 8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;border-top:1px solid var(--line);font-size:13px}.seoc h4{margin:0 0 8px;font-size:13px;color:var(--mu);font-weight:600}.seoc a{display:inline-block;margin:0 12px 6px 0;color:inherit;text-decoration:none}.seoc a:hover{text-decoration:underline}
+/* ---------- history page ---------- */
+#histSec{max-width:var(--w);margin:0 auto;padding:6px 24px 60px}
+.hist-bar{position:sticky;top:calc(var(--hdr,72px) - 1px);z-index:20;padding:6px 0 10px;background:var(--bg);display:flex;align-items:center;gap:12px}
+.hist-bar .tbar{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+#histCount{font-size:13px;color:var(--mu);margin-right:4px;white-space:nowrap}#histCount b{color:var(--tx);font-weight:600}
+.hist-sel-all{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2);cursor:pointer;white-space:nowrap;user-select:none}
+.hist-sel-all input{width:16px;height:16px;accent-color:var(--ac);cursor:pointer}
+#histSelN{font-size:13px;color:var(--ac);font-weight:600;white-space:nowrap}#histSelN b{font-variant-numeric:tabular-nums}
+.hist-stats{font-size:12.5px;color:var(--mu);padding:0 0 10px;line-height:1.6}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:28px 16px;max-width:var(--w);margin:0;padding:0 0 40px}
+.hist-card{display:flex;flex-direction:column;min-width:0;animation:rise .5s var(--out) both}
+.hist-card .hph{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--ph);cursor:pointer;border-radius:16px;transition:transform .35s var(--out),box-shadow .35s}
+.hist-card:hover .hph{transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.1)}
+.hist-card .hph img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.hist-card .hsel{position:absolute;left:10px;top:10px;z-index:2;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.18);box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;transition:transform .25s var(--out),background .2s;appearance:none;-webkit-appearance:none}
+.hist-card .hsel:checked{background:var(--ac) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-8'/%3E%3C/svg%3E") center/14px no-repeat;border-color:var(--ac);transform:scale(1.1)}
+.hist-card.selected .hph{box-shadow:0 0 0 3px var(--ac)}
+.hist-card .hcbtns{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:8px;opacity:0;transform:scale(.9);transition:.25s var(--out);z-index:2}
+.hist-card:hover .hcbtns,.hcbtns:focus-within{opacity:1;transform:none}
+.hist-card .hcbtns button{width:36px;height:36px;padding:0;background:#fff;color:#111;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.12);border-radius:50%}
+.hist-card .hcbtns button:hover{background:#fff;transform:scale(1.08)}
+.hist-card .hmode{position:absolute;left:10px;bottom:10px;font-size:11.5px;font-weight:600;color:#fff;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:99px;z-index:1}
+.hist-card .hinfo{padding:10px 4px 0;min-width:0}
+.hist-card .hinfo h3{font-size:14.5px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-card .hinfo .sub{font-size:12.5px;color:var(--mu);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#histEmpty{text-align:center;padding:60px 20px 100px;max-width:560px;margin:0 auto}
+#histEmpty h3{font-size:20px}#histEmpty p{color:var(--tx2)}
+/* hist lightbox extras */
+.hlb-cmp{margin-top:16px;border-radius:14px;overflow:hidden;position:relative;--x:50%}
+.hlb-cmp img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover}
+.hlb-cmp .hlb-bef{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--x)) 0 0)}
+.hlb-cmp .hlb-hdl{position:absolute;top:0;bottom:0;left:var(--x);width:2px;background:#fff;pointer-events:none}
+.hlb-cmp .hlb-hdl span{position:absolute;top:50%;left:50%;width:32px;height:32px;transform:translate(-50%,-50%);border-radius:50%;background:#fff;box-shadow:var(--sh2)}
+.hlb-cmp .hlb-hdl span::before{content:"‹ ›";position:absolute;inset:0;display:grid;place-items:center;color:#111;font-size:13px;letter-spacing:2px}
+.hlb-cmp input[type=range]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.hlb-cmp em{position:absolute;top:10px;font-size:11px;font-style:normal;font-weight:600;color:#fff;background:rgba(0,0,0,.5);padding:3px 9px;border-radius:99px;pointer-events:none}.hlb-cmp em.l{left:10px}.hlb-cmp em.r{right:10px}
+@media(max-width:860px){
+ #histSec{padding:4px 8px 30px}
+ .hist-bar{padding:4px 0 8px}.hist-bar .tbar{gap:6px;flex-wrap:wrap}
+ .hist-sel-all{font-size:12px}#histCount{font-size:12px}
+ .hist-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 8px}
+ .hist-card .hph{border-radius:12px}
+ .hist-card .hcbtns{opacity:1;transform:none;right:6px;top:6px;gap:6px}.hist-card .hcbtns button{width:28px;height:28px;font-size:13px}
+ .hist-card .hsel{opacity:1}
+ .hist-card .hinfo{padding:7px 4px 0}.hist-card .hinfo h3{font-size:13.5px}.hist-card .hinfo .sub{font-size:11.5px}
+}
