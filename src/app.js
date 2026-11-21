@@ -3,7 +3,7 @@ let Q0='',QT='';try{const u=new URLSearchParams(location.search);Q0=(u.get('q')|
 const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s),LS=k=>{try{return JSON.parse(localStorage[k]||'null')}catch(e){return null}},SV=(k,v)=>{try{localStorage[k]=JSON.stringify(v)}catch(e){}};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const RM=matchMedia('(prefers-reduced-motion: reduce)').matches,HOVER=matchMedia('(hover:hover) and (pointer:fine)').matches;
-const ITEMS={},DATA={},LOAD={},TABS=['pose','depth','costume','anime','portrait','studio','fav','recent'],TNAME={pose:'姿势库',depth:'深度姿势',costume:'服装库',anime:'动画服装库',portrait:'人像库',studio:'试穿',fav:'我的收藏',recent:'最近浏览'};
+const ITEMS={},DATA={},LOAD={},TABS=['pose','depth','costume','anime','portrait','studio','fav','recent','history'],TNAME={pose:'姿势库',depth:'深度姿势',costume:'服装库',anime:'动画服装库',portrait:'人像库',studio:'试穿',fav:'我的收藏',recent:'最近浏览',history:'生成记录'};
 const PFX={pose:'p:',depth:'d:',costume:'c:',anime:'a:',portrait:'r:'},KT={p:'pose',d:'depth',c:'costume',a:'anime',r:'portrait'},TL=it=>({pose:'姿势',depth:'深度姿势',costume:'服装',anime:'动画服装',portrait:'人像'})[it.type];
 const st={tab:'pose',q:'',f:{},sort:'def',lang:LS('lang')||'zh',tl:LS('tl')||'zh',fav:new Set(LS('fav')||[]),sel:LS('sel')||[],rec:LS('rec')||[],recT:LS('recT')||{},ang:LS('ang')||{},list:[],n:0,adult:LS('adult')===true};
 const ok=it=>it&&(st.adult||!it.a);
@@ -69,7 +69,7 @@ function toggleSel(k){const i=st.sel.indexOf(k);i>=0?st.sel.splice(i,1):st.sel.p
 function combo(lang){const its=st.sel.map(k=>ITEMS[k]).filter(Boolean),p=its.filter(i=>i.type=='pose'),d=its.filter(i=>i.type=='depth'),c=its.filter(i=>i.type=='costume'||i.type=='anime'),r=its.filter(i=>i.type=='portrait');
  if(lang=='en')return['masterpiece, best quality, 1girl',...r.map(i=>i.en.replace(/, consistent facial features, face reference$/,'')),...c.map(i=>i.en.replace(/^\w+ outfit, /,'')),...p.map(i=>prompt(i,'en')),...d.map(i=>'depth reference, '+prompt(i,'en'))].join(', ');
  return['杰作，最佳画质，一位女性',...r.map(i=>'人物：'+i.len+(i.st?'，'+i.st:'')),...c.map(i=>i.zh.replace(/。$/,'')),...p.map(i=>'摆出「'+prompt(i,'zh')+'」的姿势'),...d.map(i=>'深度姿势参考：'+prompt(i,'zh'))].join('；')+'。'}
-function tray(added){const n=st.sel.length;if(st.tab=='studio'){$('#tray').hidden=true;document.body.classList.remove('tray');return}$('#tray').hidden=!n;document.body.classList.toggle('tray',n>0);if(!n)return;if(added&&innerWidth>760)$('#tray').classList.remove('min');if(added&&innerWidth<=760&&n==1){$('#tray').classList.add('min');$('#trayMin').textContent='展开'}
+function tray(added){const n=st.sel.length;if(st.tab=='studio'||st.tab=='history'){$('#tray').hidden=true;document.body.classList.remove('tray');return}$('#tray').hidden=!n;document.body.classList.toggle('tray',n>0);if(!n)return;if(added&&innerWidth>760)$('#tray').classList.remove('min');if(added&&innerWidth<=760&&n==1){$('#tray').classList.add('min');$('#trayMin').textContent='展开'}
  const p=st.sel.filter(k=>k[0]=='p').length,dd=st.sel.filter(k=>k[0]=='d').length,rr=st.sel.filter(k=>k[0]=='r').length;$('#trayN').textContent=[p&&`${p} 个姿势`,dd&&`${dd} 个深度姿势`,n-p-dd-rr&&`${n-p-dd-rr} 套服装`,rr&&`${rr} 个人像`].filter(Boolean).join(' · ');
  $$('[data-tl]').forEach(b=>b.classList.toggle('on',b.dataset.tl==st.tl));
  $('#trayItems').innerHTML=st.sel.map(k=>ITEMS[k]?`<div><img src="${esc(thumb(ITEMS[k]))}"${ITEMS[k].ref?` referrerpolicy="${esc(ITEMS[k].ref)}"`:''} alt="${esc(title(ITEMS[k]))}"><em>${TL(ITEMS[k])}</em><b data-k="${k}" title="移除" role="button" aria-label="移除">×</b></div>`:'').join('');$('#trayText').textContent=combo(st.tl)}
@@ -96,8 +96,10 @@ function setLang(l,quiet){st.lang=l;SV('lang',l);document.documentElement.datase
 $$('button[data-lang]').forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
 // 标签页
 function moveInd(){const b=$('.tabs button.on'),ind=$('.ind');if(!b)return;ind.style.width=b.offsetWidth+'px';ind.style.transform=`translateX(${b.offsetLeft}px)`}
-async function setTab(t,openId){$('#porNote').hidden=t!='portrait';$('#depthNote').hidden=t!='depth';document.body.classList.toggle('depth',t=='depth');if(t=='studio'){st.tab=t;$$('.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.tab==t);b.setAttribute('aria-selected',b.dataset.tab==t)});moveInd();document.title='试穿 · 衣姿 PoseWear';history.replaceState(null,'','#studio');document.body.classList.add('studio');$('#studio').hidden=false;$('#tray').hidden=true;scrollTo({top:0});window.WB&&WB.show();return}
+async function setTab(t,openId){$('#porNote').hidden=t!='portrait';$('#depthNote').hidden=t!='depth';document.body.classList.toggle('depth',t=='depth');if(t=='studio'){st.tab=t;$$('.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.tab==t);b.setAttribute('aria-selected',b.dataset.tab==t)});moveInd();document.title='试穿 · 衣姿 PoseWear';history.replaceState(null,'','#studio');document.body.classList.add('studio');document.body.classList.remove('histview');$('#studio').hidden=false;$('#histSec').hidden=true;$('#tray').hidden=true;scrollTo({top:0});window.WB&&WB.show();return}
+ if(t=='history'){st.tab=t;$$('.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.tab==t);b.setAttribute('aria-selected',b.dataset.tab==t)});moveInd();document.title='生成记录 · 衣姿 PoseWear';history.replaceState(null,'','#history');document.body.classList.remove('studio');document.body.classList.add('histview');$('#studio').hidden=true;$('#histSec').hidden=false;$('#tray').hidden=true;scrollTo({top:0});window.HIS&&HIS.show();return}
  if(document.body.classList.contains('studio')){document.body.classList.remove('studio');$('#studio').hidden=true;tray()}
+ if(document.body.classList.contains('histview')){document.body.classList.remove('histview');$('#histSec').hidden=true;tray()}
  const changed=st.tab!=t;st.tab=t;if(changed)grid.classList.add('gbusy');st.f={};st.q='';$('#q').value='';$('#qx').hidden=true;
  $$('.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.tab==t);b.setAttribute('aria-selected',b.dataset.tab==t)});moveInd();
  document.title=TNAME[t]+' · 衣姿 PoseWear';if(!openId)history.replaceState(null,'','#'+t);
@@ -161,7 +163,7 @@ $('.lb-bg').onclick=lbClose;$('.lb-x').onclick=lbClose;$('.prev').onclick=()=>st
 addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey)return;const ae=document.activeElement,inp=ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName);
  if(e.key=='Escape'){if(!$('#ageBox').hidden)return $('#ageBox').hidden=true;if(!$('#privBox').hidden)return $('#privBox').hidden=true;if(!$('#helpBox').hidden)return $('#helpBox').hidden=true;if(!$('#lb').hidden)return lbClose();drawer(false);if(inp)ae.blur();return}if(inp)return;
  if(e.key=='?'){$('#helpBox').hidden=!$('#helpBox').hidden;return}const k=e.key.toLowerCase();
- if($('#lb').hidden){if(e.key=='/'){e.preventDefault();$('#q').focus()}else if(k=='r'&&st.tab!='studio'&&!$('#rand').hidden)randPick();else if(k=='t')theme();else if(k=='l')setLang(st.lang=='zh'?'en':'zh');else if('12345678'.includes(e.key)&&TABS[e.key-1])setTab(TABS[e.key-1]);return}
+ if($('#lb').hidden){if(e.key=='/'){e.preventDefault();$('#q').focus()}else if(k=='r'&&st.tab!='studio'&&!$('#rand').hidden)randPick();else if(k=='t')theme();else if(k=='l')setLang(st.lang=='zh'?'en':'zh');else if('123456789'.includes(e.key)&&TABS[e.key-1])setTab(TABS[e.key-1]);return}
  const it=st.list[li];if(e.key=='ArrowLeft')step(-1);else if(e.key=='ArrowRight')step(1);
  else if(/Arrow(Up|Down)/.test(e.key)&&it.angles){e.preventDefault();setAng(it,(it.ai+(e.key=='ArrowUp'?-1:1)+it.angles.length)%it.angles.length);lbDraw()}
  else if(k=='f')toggleFav(it.k);else if(k=='a')toggleSel(it.k);else if(k=='c')copy(prompt(it,'zh'),'中文描述');else if(k=='s')share();
