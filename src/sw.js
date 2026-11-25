@@ -1,5 +1,5 @@
 const VERSION = 'posewear-development';
-const PRECACHE = ['./','index.html','theme.js','style.css','app.js','image-providers.js','studio.js','extras.js','zip.js','history.js','i18n.js','references.js','favicon.svg'];
+const PRECACHE = ['./','index.html','theme.js','style.css','i18n.js','catalog.js','references.js','palette.js','app.js','sketch.js','command-palette.js','zip.js','extras.js','image-providers.js','board-export.js','studio.js','history.js','favicon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(PRECACHE)).then(() => self.skipWaiting()));
 });

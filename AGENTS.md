@@ -13,11 +13,16 @@
 
 | 路径 | 职责 |
 |---|---|
-| `build.py` | 构建主入口：读 `assets-raw` 数据 → 生成每库 JSON、图片变体、SEO 页；内部依次 exec `post.py`、`seo.py` |
-| `post.py` | 后处理：资源指纹（`/assets/<name>.<hash>.js|json`）、`_headers`（含 CSP）、index.html 组装 |
-| `seo.py` | 每库/每条目的静态 SEO 落地页 |
+| `build.py` | 构建主入口：读 `assets-raw` 数据 → 生成每库 JSON、图片变体，显式调用 `post.run(ctx)` |
+| `post.py` | 后处理模块（`post.run(ctx)`）：资源指纹（`/assets/<name>.<hash>.js|json`）、`sw.js` 预缓存、`_headers`（含 CSP）、`index.html` 组装，并调用 `seo.run(ctx)` |
+| `seo.py` | 静态 SEO 落地页模块（`seo.run(ctx)`）：中英文首页/分类/标签/详情页与站点地图 |
 | `src/index.html` | 单页骨架（所有栏目、试穿台、托盘、弹窗的 DOM 都在这里） |
+| `src/catalog.js` | `window.PoseWearCatalog` 单一数据源：12 库注册表、筛选与配色、槽位映射与通用 DOM/存储工具 |
 | `src/app.js` | 图库 SPA：栏目切换、筛选、卡片、灯箱、收藏、组合与**悬浮生图工作台**（托盘） |
+| `src/palette.js` | 灯箱主色调提取与色卡渲染（`window.PoseWearPalette`） |
+| `src/sketch.js` | 全屏速写定时练习工作室（`window.PoseWearSketch`） |
+| `src/command-palette.js` | 全局 `⌘K` 命令面板（`window.PoseWearCommandPalette`） |
+| `src/board-export.js` | 参考画板高分 PNG 拼贴导出（`window.PoseWearBoardExport`） |
 | `src/references.js` | 浏览器与 MCP 共用选定视角、公开图片地址与复制文本的格式 |
 | `src/i18n.js` | 中英日界面词条与语言切换，`pwUiLocale` 独立于提示词设置 |
 | `src/studio.js` | 工作台选材、提示词、生成与结果；对外接口是 `window.WB` |
