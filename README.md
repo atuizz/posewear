@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=flat)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=111111)](https://github.com/atuizz/posewear/stargazers)
 
-**[在线体验](https://posewear.pages.dev/)** · [核心亮点](#核心亮点) · [素材库一览](#12-个素材库一览) · [生图方式](#三种生图方式) · [本地运行](#本地运行) · [English](README.en.md) · [日本語](README.ja.md) · [更新日志](CHANGELOG.md)
+**[在线体验](https://posewear.pages.dev/)** · [核心亮点](#核心亮点) · [素材库一览](#12-个素材库一览) · [生图方式](#三种生图方式) · [本地运行](#本地运行) · [English](README.en.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [更新日志](CHANGELOG.md)
 
 <br>
 
@@ -178,7 +178,7 @@ npm run test:offline
 npm test
 ```
 
-当前发布版本 **v1.3.2**（2026-11-24）· [查看全部更新日志](CHANGELOG.md)
+当前发布版本 **v1.4.0**（2026-11-25）· [查看全部更新日志](CHANGELOG.md)
 
 ---
 

@@ -1658,6 +1658,10 @@ html:lang(ja) .ph.err::after {
   content: "画像を読み込めません · 再試行";
 }
 
+html:lang(vi) .ph.err::after {
+  content: "Không tải được ảnh · Thử lại";
+}
+
 .ph.depth.err {
   background: #141414;
 }
@@ -5110,6 +5114,10 @@ html:lang(ja) .st-r .hl:empty::before {
   content: "生成した画像はこの端末に保存されます。";
 }
 
+html:lang(vi) .st-r .hl:empty::before {
+  content: "Ảnh đã tạo được lưu tại đây trên thiết bị này.";
+}
+
 .hl button {
   position: relative;
   flex: none;
@@ -7232,7 +7240,8 @@ a.hlb-ref:hover {
   .lang-panel { right: -40px; }
   .tgen-row { flex-wrap: wrap; }
   html:lang(en) .studio-head .modes button,
-  html:lang(ja) .studio-head .modes button { white-space: normal; }
+  html:lang(ja) .studio-head .modes button,
+  html:lang(vi) .studio-head .modes button { white-space: normal; }
 }
 
 @media (max-width: 390px) {
@@ -7319,6 +7328,8 @@ a.hlb-ref:hover {
   html:lang(en) .ph.depth .card-flip .flip-hint::after { content: "Line"; }
   html:lang(ja) .card-flip .flip-hint::after { content: "深度"; }
   html:lang(ja) .ph.depth .card-flip .flip-hint::after { content: "線画"; }
+  html:lang(vi) .card-flip .flip-hint::after { content: "Độ sâu"; }
+  html:lang(vi) .ph.depth .card-flip .flip-hint::after { content: "Phác thảo"; }
 }
 
 @media (hover: none) {

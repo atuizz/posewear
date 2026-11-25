@@ -1,6 +1,6 @@
 # AGENTS.md — 衣姿 PoseWear 开发与交接手册
 
-给接手本项目的开发者 / AI 看的运行手册。用户向说明在 README.md（三语），这里只讲怎么开发、构建、测试、部署和避坑。
+给接手本项目的开发者 / AI 看的运行手册。用户向说明在 README.md（四语：中/英/日/越），这里只讲怎么开发、构建、测试、部署和避坑。
 
 ## 项目速览
 
@@ -24,7 +24,7 @@
 | `src/command-palette.js` | 全局 `⌘K` 命令面板（`window.PoseWearCommandPalette`） |
 | `src/board-export.js` | 参考画板高分 PNG 拼贴导出（`window.PoseWearBoardExport`） |
 | `src/references.js` | 浏览器与 MCP 共用选定视角、公开图片地址与复制文本的格式 |
-| `src/i18n.js` | 中英日界面词条与语言切换，`pwUiLocale` 独立于提示词设置 |
+| `src/i18n.js` | 中英日越界面词条与语言切换，`pwUiLocale` 独立于提示词设置 |
 | `src/studio.js` | 工作台选材、提示词、生成与结果；对外接口是 `window.WB` |
 | `src/image-providers.js` | 悬浮及完整工作台共用的生图服务商协议、连接测试和错误解析 |
 | `src/theme.js` | 首屏外观、系统主题与用户选择的同步 |
@@ -122,8 +122,8 @@ U=http://127.0.0.1:8902 npm test
 
 ## 约定
 
-- 默认 UI 文案简体中文，同时维护英文、日文词条；品牌红 `#ff2442` 点缀、白底干净、**不用黄色/金色**；页面忌文字堆砌。
+- 默认 UI 文案简体中文，同时维护英文、日文、越南文词条；品牌红 `#ff2442` 点缀、白底干净、**不用黄色/金色**；页面忌文字堆砌。
 - 提交：显式列文件路径提交，**不要 `git add -A`**（工作区常有 dist-assets 等大目录未跟踪）。
-- 发版：三语 README 更新日志各加一条（中/英/日），GitHub Release 用 API 建，tag 形如 `v1.2.1`。
+- 发版：四语 README 版本号与 `CHANGELOG.md` 同步更新，GitHub Release 用 API 建，tag 形如 `v1.4.0`。
 - 生产红线：部署、合并 PR、回议题已获维护者长期授权（2026-11-22）；新功能/动架构/花钱的事先问维护者。
 - Web Analytics：代码已支持（`POSEWEAR_WA_TOKEN` 构建注入 + CSP 放行），差 Cloudflare 后台 Pages → posewear → Metrics 开启或给站点令牌，开后验 beacon 上线。
