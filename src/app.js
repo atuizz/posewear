@@ -704,18 +704,20 @@ function lbResetView(hideTools=false){
 function extractPalette(img){
  if(!img||!img.complete||!img.naturalWidth)return[];
  try{
-  const cv=document.createElement('canvas');cv.width=48;cv.height=48;
+  const S=48,cv=document.createElement('canvas');cv.width=S;cv.height=S;
   const ctx=cv.getContext('2d',{willReadFrequently:true});
-  ctx.drawImage(img,0,0,48,48);
-  const d=ctx.getImageData(0,0,48,48).data;
+  ctx.drawImage(img,0,0,S,S);
+  const d=ctx.getImageData(0,0,S,S).data;
   const map=new Map();
-  for(let i=0;i<d.length;i+=4){
-   const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+  for(let p=0;p<S*S;p++){
+   const i=p*4,r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
    if(a<200)continue;
    if(r>242&&g>242&&b>242)continue;
+   const x=p%S,y=(p/S)|0;
+   const center=(x>=7&&x<=40&&y>=4&&y<=44)?1.8:0.25;
    const qr=Math.min(240,Math.round(r/16)*16),qg=Math.min(240,Math.round(g/16)*16),qb=Math.min(240,Math.round(b/16)*16);
    const max=Math.max(r,g,b),min=Math.min(r,g,b),sat=max?(max-min)/max:0;
-   const w=1+sat*2.2;
+   const w=(0.35+sat*4.5)*center;
    const key=(qr<<16)|(qg<<8)|qb;
    const cur=map.get(key);
    if(cur){cur.w+=w;cur.r+=r*w;cur.g+=g*w;cur.b+=b*w}
@@ -735,7 +737,7 @@ function lbDrawPalette(it){
  const box=$('#lbPal'),img=$('#lbImg');
  if(!box||!it||it.type==='pose'||it.type==='depth'||it.ext){if(box)box.hidden=true;return}
  const paint=()=>{
-  if(!box.isConnected||$('#lb').hidden||previewItem()!==it)return;
+  if(!box.isConnected||$('#lb').hidden||previewItem()!==it||img.classList.contains('lo'))return;
   const cols=extractPalette(img);
   if(cols.length<2){box.hidden=true;return}
   box.innerHTML=`<div class="lb-pal-h"><small>提取配色</small><small class="mu">点击复制</small></div><div class="lb-pal-sw">${cols.map(h=>`<button type="button" class="pal-sw" data-hex="${h}" style="--sw:${h}" title="复制 ${h}"><i></i><span>${h}</span></button>`).join('')}</div>`;
@@ -886,7 +888,7 @@ const step=d=>{li=(li+d+st.list.length)%st.list.length;lbVariant=null;lbResetVie
 $('.lb-bg').onclick=lbClose;$('.lb-x').onclick=lbClose;$('.prev').onclick=()=>step(-1);$('.next').onclick=()=>step(1);
 
 // ---------- 速写定时练习（Gesture Drawing Studio） ----------
-const SK={open:false,dur:60,total:10,deck:[],i:0,seen:[],rem:60,last:0,paused:false,sound:false,flip:false,grid:0,gray:false,pair:false,timer:null,actx:null,beeped:0,prevFocus:null};
+const SK={open:false,dur:60,total:10,pool:[],deck:[],i:0,seen:[],rem:60,last:0,paused:false,sound:false,flip:false,grid:0,gray:false,pair:false,timer:null,actx:null,beeped:0,prevFocus:null};
 function skChime(freq=660,dur=.12){
  if(!SK.sound)return;
  try{
@@ -901,6 +903,7 @@ function skChime(freq=660,dur=.12){
  }catch{}
 }
 function skFmt(sec){const s=Math.max(0,Math.ceil(sec));return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+function skCap(){return SK.total?Math.min(SK.total,SK.deck.length):0}
 function skRenderTools(){
  const it=SK.deck[SK.i],frame=$('#skFrame'),gridEl=$('#skGrid');
  if(frame){
@@ -928,9 +931,10 @@ function skShowCard(){
  $('#skDone').hidden=true;frame.hidden=false;
  stage.dataset.imgType=shown.type;
  img.referrerPolicy=shown.ref||'';img.src=src;img.alt=title(shown);
- const totLabel=SK.total?String(SK.total):'∞';
- $('#skStep').textContent=`${SK.i+1} / ${totLabel}`;
- $('#skName').textContent=title(it)+(it.angles?.[it.ai]?.zh?' · '+it.angles[it.ai].zh:'');
+ const cap=skCap();
+ $('#skStep').textContent=`${SK.i+1} / ${cap||'∞'}`;
+ const ang=it.angles?.[it.ai]?.zh,angLoc=ang?(window.PWLocale?window.PWLocale.t(ang):ang):'';
+ $('#skName').textContent=title(it)+(angLoc?' · '+angLoc:'');
  SK.rem=SK.dur;SK.beeped=0;SK.last=performance.now();
  $('#skTime').textContent=skFmt(SK.rem);
  $('#skProg').style.transform='scaleX(1)';
@@ -950,13 +954,13 @@ function skStep(d){
  const next=SK.i+d;
  if(next<0)return;
  if(SK.total&&next>=Math.min(SK.total,SK.deck.length))return skFinish();
- if(next>=SK.deck.length){SK.deck=SK.deck.concat(shuffle(st.list.filter(ok)));}
+ if(next>=SK.deck.length){const base=SK.pool.length?SK.pool:st.list.filter(ok);if(!base.length)return skFinish();SK.deck=SK.deck.concat(shuffle(base.slice()))}
  SK.i=next;SK.pair=false;skShowCard();
  if(d>0)skChime(659,.14);
 }
 function skTick(){
- if(!SK.open||SK.paused)return;
- const now=performance.now(),dt=(now-SK.last)/1000;SK.last=now;
+ if(!SK.open||SK.paused||document.hidden)return;
+ const now=performance.now(),dt=Math.min(.5,(now-SK.last)/1000);SK.last=now;
  SK.rem=Math.max(0,SK.rem-dt);
  $('#skTime').textContent=skFmt(SK.rem);
  $('#skProg').style.transform=`scaleX(${Math.max(0,SK.rem/SK.dur)})`;
@@ -964,6 +968,7 @@ function skTick(){
  if(ceil<=3&&ceil>=1&&SK.beeped!==ceil){SK.beeped=ceil;skChime(523,.07)}
  if(SK.rem<=0)skStep(1);
 }
+document.addEventListener('visibilitychange',()=>{if(SK.open&&!document.hidden)SK.last=performance.now()});
 function skTogglePause(force){
  SK.paused=force===undefined?!SK.paused:!!force;
  SK.last=performance.now();
@@ -979,7 +984,7 @@ async function sketchOpen(opts={}){
  }
  if(!pool.length)return toast('当前没有可用于速写的素材');
  SK.prevFocus=document.activeElement;
- SK.deck=shuffle(pool);SK.i=0;SK.seen=[];SK.flip=false;SK.grid=0;SK.gray=false;SK.pair=false;
+ SK.pool=pool.slice();SK.deck=shuffle(pool.slice());SK.i=0;SK.seen=[];SK.flip=false;SK.grid=0;SK.gray=false;SK.pair=false;
  SK.open=true;SK.paused=false;
  $('#sketch').hidden=false;document.body.style.overflow='hidden';
  $$('#skDur button').forEach(b=>{const on=+b.dataset.sd===SK.dur;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
@@ -1008,13 +1013,13 @@ $('#skDur')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-sd]');if(!b)return;
  SK.dur=+b.dataset.sd;SK.rem=SK.dur;SK.last=performance.now();SK.beeped=0;
  $$('#skDur button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});
- $('#skTime').textContent=skFmt(SK.rem);$('#skProg').style.transform='scaleX(1)';
+ if($('#skDone').hidden){$('#skTime').textContent=skFmt(SK.rem);$('#skProg').style.transform='scaleX(1)'}
 });
 $('#skTotal')?.addEventListener('click',e=>{
  const b=e.target.closest('[data-sc]');if(!b)return;
  SK.total=+b.dataset.sc;
  $$('#skTotal button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on))});
- $('#skStep').textContent=`${SK.i+1} / ${SK.total||'∞'}`;
+ if($('#skDone').hidden)$('#skStep').textContent=`${SK.i+1} / ${skCap()||'∞'}`;
 });
 $('#sketch')?.addEventListener('click',e=>{
  const t=e.target.closest('[data-skt]');
@@ -1039,25 +1044,25 @@ $('#sketch')?.addEventListener('click',e=>{
 let cmdPrevFocus=null,cmdIdx=0,cmdItems=[];
 function cmdCatalog(){
  const list=[
-  {g:'快捷操作',id:'act:sketch',label:'开始速写定时练习（60s）',kw:'sketch gesture timer 速写 计时 练习',hint:'60s',run:()=>sketchOpen({dur:60})},
-  {g:'快捷操作',id:'act:shuffle',label:'工作台 · 随机一组参考搭配',kw:'studio shuffle random 工作台 灵感 随机',run:async()=>{navigate('studio');await new Promise(r=>setTimeout(r,80));$('#wbShuffle')?.click()}},
-  {g:'快捷操作',id:'act:dock',label:trayOpen?'收起悬浮创作台':'展开悬浮创作台',kw:'dock tray workspace 悬浮 创作台',run:()=>trayOpen?closeTray():openTray()},
-  {g:'快捷操作',id:'act:theme',label:'切换深浅外观',kw:'theme dark light 外观 深色 浅色',hint:'T',run:()=>window.PoseWearTheme.toggle()},
-  {g:'快捷操作',id:'act:lang',label:'切换素材描述语言（中 / 英）',kw:'language prompt en zh 语言 英文 中文',hint:'L',run:()=>setLang(st.lang==='zh'?'en':'zh')},
-  {g:'快捷操作',id:'act:cfg',label:'打开 API 与本机引擎设置',kw:'api key comfyui sd.cpp settings 设置 配置',run:()=>window.WB?.cfgOpen?.()},
+  {g:'快捷操作',id:'act:sketch',label:'开始速写定时练习（60s）',kw:'sketch gesture timer croquis 速写 计时 练习 クロッキー',hint:'60s',run:()=>sketchOpen({dur:60})},
+  {g:'快捷操作',id:'act:shuffle',label:'工作台 · 随机一组参考搭配',kw:'studio shuffle random 工作台 灵感 随机 シャッフル スタジオ',run:async()=>{navigate('studio');await new Promise(r=>setTimeout(r,80));$('#wbShuffle')?.click()}},
+  {g:'快捷操作',id:'act:dock',label:trayOpen?'收起悬浮创作台':'展开悬浮创作台',kw:'dock tray workspace 悬浮 创作台 パネル',run:()=>trayOpen?closeTray():openTray()},
+  {g:'快捷操作',id:'act:theme',label:'切换深浅外观',kw:'theme dark light 外观 深色 浅色 ダーク ライト',hint:'T',run:()=>window.PoseWearTheme.toggle()},
+  {g:'快捷操作',id:'act:lang',label:'切换素材描述语言（中 / 英）',kw:'language prompt en zh 语言 英文 中文 言語',hint:'L',run:()=>setLang(st.lang==='zh'?'en':'zh')},
+  {g:'快捷操作',id:'act:cfg',label:'打开 API 与本机引擎设置',kw:'api key comfyui sd.cpp settings 设置 配置 ローカル',run:()=>window.WB?.cfgOpen?.()},
  ];
  if(st.tab==='studio'&&!$('#wbExportBoard')?.hidden){
-  list.splice(1,0,{g:'快捷操作',id:'act:export',label:'导出参考画板拼图 PNG',kw:'export board moodboard png 导出 拼图',run:()=>$('#wbExportBoard')?.click()});
+  list.splice(1,0,{g:'快捷操作',id:'act:export',label:'导出参考画板拼图 PNG',kw:'export board moodboard png 导出 拼图 書き出し',run:()=>$('#wbExportBoard')?.click()});
  }
  const tabMeta=[
-  ['pose','姿势库','pose sketch line 姿态'],['depth','深度姿势','depth 3d map 深度'],
-  ['portrait','人像库','portrait face model 人像'],['expr','表情库','expression emotion 表情'],
-  ['hair','发型库','hairstyle hair 发型'],['costume','服装库','costume outfit dress 服装 穿搭'],
-  ['anime','动画服装库','anime costume 动画 二次元'],['dyn','历代服饰','dynasty hanfu 历代 汉服'],
-  ['scene','场景库','scene background 场景 背景'],['light','光影库','lighting light 光影 布光'],
-  ['prop','道具库','prop item 道具'],['furn','家具库','furniture 家具'],
-  ['studio','创作工作台','studio tryon generate 工作台 试穿 生图'],
-  ['fav','我的收藏','favorite saved 收藏'],['recent','最近浏览','recent history 最近'],['history','生成记录','generation history 记录'],
+  ['pose','姿势库','pose sketch line 姿态 ポーズ'],['depth','深度姿势','depth 3d map 深度'],
+  ['portrait','人像库','portrait face model 人像 人物'],['expr','表情库','expression emotion 表情'],
+  ['hair','发型库','hairstyle hair 发型 髪型'],['costume','服装库','costume outfit dress 服装 穿搭 衣装'],
+  ['anime','动画服装库','anime costume outfit 动画 二次元 アニメ衣装'],['dyn','历代服饰','dynasty historical hanfu 历代 汉服 時代衣装'],
+  ['scene','场景库','scene background 场景 背景'],['light','光影库','lighting light 光影 布光 照明'],
+  ['prop','道具库','prop item 道具 小道具'],['furn','家具库','furniture 家具'],
+  ['studio','创作工作台','studio tryon generate 工作台 试穿 生图 スタジオ'],
+  ['fav','我的收藏','favorite saved 收藏 お気に入り'],['recent','最近浏览','recent history 最近 履歴'],['history','生成记录','generation history 记录 生成履歴'],
  ];
  for(const [tab,label,kw] of tabMeta){
   const n=tab==='fav'?st.fav.size:tab==='recent'?st.rec.length:tab==='history'?$('#nHist')?.textContent:($(`#libraryMenu [data-tab="${tab}"] [data-stat]`)?.textContent||'');
@@ -1067,8 +1072,8 @@ function cmdCatalog(){
 }
 function cmdDraw(){
  const q=($('#cmdQ').value||'').trim().toLowerCase();
- const all=cmdCatalog();
- cmdItems=q?all.filter(x=>(x.label+' '+x.kw).toLowerCase().includes(q)):all;
+ const all=cmdCatalog(),tr=window.PWLocale?s=>window.PWLocale.t(s):s=>s;
+ cmdItems=q?all.filter(x=>(x.label+' '+tr(x.label)+' '+x.kw).toLowerCase().includes(q)):all;
  if(q&&FDEF[st.tab]){
   cmdItems.unshift({g:'当前图库搜索',id:'search',label:`搜索「${$('#cmdQ').value.trim()}」`,kw:q,hint:TNAME[st.tab],run:()=>{const v=$('#cmdQ').value.trim();$('#q').value=v;st.q=v;$('#qx').hidden=!v;apply()}});
  }

@@ -1406,8 +1406,8 @@ body.none0 #sketchBtn{display:none!important}
 #skSound.on .sk-snd-on{display:block}
 #skSound.on .sk-snd-off{display:none}
 .sk-stage{flex:1;min-height:0;display:grid;place-items:center;padding:18px 24px;overflow:auto;background:var(--sf);position:relative}
-.sk-stage[data-img-type=pose]{background:var(--phw)}
-.sk-stage[data-img-type=depth]{background:#141414}
+.sk-stage[data-img-type=pose],.sk-stage[data-img-type=pose] .sk-frame{background:var(--phw)}
+.sk-stage[data-img-type=depth],.sk-stage[data-img-type=depth] .sk-frame{background:#141414}
 .sk-frame{position:relative;display:inline-grid;place-items:center;max-width:100%;max-height:100%;border-radius:12px;overflow:hidden}
 .sk-frame img{display:block;max-width:min(92vw,1120px);max-height:calc(100dvh - 176px);width:auto;height:auto;object-fit:contain;transition:transform .22s var(--out),filter .22s}
 .sk-stage[data-img-type=pose] .sk-frame img{mix-blend-mode:multiply}
@@ -1415,11 +1415,12 @@ body.none0 #sketchBtn{display:none!important}
 .sk-done{text-align:center;max-width:680px;width:100%;padding:28px 24px;background:var(--bg2);border:1px solid var(--line2);border-radius:22px;box-shadow:var(--sh2)}
 .sk-done h3{font-size:22px;margin-bottom:6px}
 .sk-done p{margin:0 0 18px;color:var(--tx2);font-size:14px}
-.sk-recap{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;max-height:44vh;overflow:auto;margin-bottom:20px;padding:2px}
-.sk-recap button{padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--ph);border:1px solid var(--line2)}
+.sk-recap{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-height:44vh;overflow:auto;margin-bottom:20px;padding:2px}
+.sk-recap button{width:92px;flex:none;padding:0;border-radius:10px;overflow:hidden;aspect-ratio:3/4;background:var(--ph);border:1px solid var(--line2)}
 .sk-recap button:hover{border-color:var(--ac);transform:translateY(-2px)}
 .sk-recap img{width:100%;height:100%;object-fit:cover;display:block}
 .sk-done-act{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+#sketch:has(#skDone:not([hidden])) .sk-foot{display:none}
 .sk-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--bg);flex:none;flex-wrap:wrap}
 .sk-ctrl{display:flex;align-items:center;gap:8px}
 .sk-ctrl button{min-height:38px}

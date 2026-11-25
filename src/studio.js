@@ -240,7 +240,7 @@ function loadBoardImage(ref,item){
 }
 async function exportBoardPng(opts={}){
  const chosen=[...W.persons.map(ref=>['portrait',ref]),...W.garments.map(ref=>['costume',ref]),
-               ...W.poses.map(ref=>['pose',ref]),...W.exprs.map(ref=>['expr',ref]),...W.extraRefs.map(ref=>[A.ITEMS[ref.k].type,ref])];
+               ...W.poses.map(ref=>['pose',ref]),...W.exprs.map(ref=>['expr',ref]),...W.extraRefs.map(ref=>[A.ITEMS[ref.k]?.type||'other',ref])];
  if(!chosen.length)return null;
  const btn=$('#wbExportBoard');if(btn)btn.disabled=true;
  const t=s=>window.PWLocale?window.PWLocale.t(s):s;
@@ -274,7 +274,7 @@ async function exportBoardPng(opts={}){
   ctx.fillStyle=mu;ctx.font=`500 16px ${sans}`;
   ctx.fillText('·  '+t('参考画板'),padX+48+brandW,47);
   const now=new Date(),stamp=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
-  const ar=$('#wbAR').value,metaParts=[`${n} ${t('张')}`,ar!=='auto'?ar:'',stamp].filter(Boolean).join('  ·  ');
+  const ar=$('#wbAR').value,unit=document.documentElement.lang==='en'&&n===1?'image':t('张'),metaParts=[`${n} ${unit}`,ar!=='auto'?ar:'',stamp].filter(Boolean).join('  ·  ');
   ctx.textAlign='right';ctx.font=`500 14px ${sans}`;ctx.fillStyle=mu;
   ctx.fillText(metaParts,Wpx-padX,47);ctx.textAlign='left';
   let extSkipped=0;
@@ -301,9 +301,10 @@ async function exportBoardPng(opts={}){
     ctx.globalCompositeOperation='source-over';
    }else{
     if(e.ext)extSkipped++;
-    ctx.fillStyle=mu;ctx.font=`500 15px ${sans}`;ctx.textAlign='center';
-    ctx.fillText(e.cat,ix+imgW/2,iy+imgH/2-12);
-    ctx.font=`400 13px ${sans}`;ctx.fillText(clipText(ctx,e.title,imgW-36),ix+imgW/2,iy+imgH/2+14);
+    ctx.fillStyle=mu;ctx.font=`600 15px ${sans}`;ctx.textAlign='center';
+    ctx.fillText(e.cat,ix+imgW/2,iy+imgH/2-16);
+    ctx.font=`400 13px ${sans}`;ctx.fillText(clipText(ctx,e.title,imgW-36),ix+imgW/2,iy+imgH/2+8);
+    if(e.ext){ctx.font=`400 12px ${sans}`;ctx.fillText(t('在原站查看'),ix+imgW/2,iy+imgH/2+32)}
     ctx.textAlign='left';
    }
    ctx.restore();
