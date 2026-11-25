@@ -1,69 +1,136 @@
 <div align="center">
 
-<img src="docs/banner.jpg" alt="Portrait + pose + outfit = result" width="900">
+<br>
 
-<sub>The result is an AI-generated example using a portrait, pose and outfit from the galleries as references. Source images belong to their authors; see Sources and licenses below.</sub>
-
-<img src="docs/logo.svg" width="72" alt="PoseWear">
+<img src="docs/logo.svg" width="64" alt="PoseWear">
 
 # PoseWear
 
-A place to find reference images for drawing, photography, and AI generation.
+**Visual reference library & browser creative studio for drawing, photography, and AI image generation**
 
-Twelve libraries — poses, outfits, portraits, expressions, and more — each with Chinese and English prompts. Pick your references and generate right in the browser, or hand the set to your AI agent.
+12 curated libraries · 5,700+ references · Bilingual Chinese & English prompts · Zero accounts, zero subscriptions.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-black)](LICENSE)
-[![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-f38020?logo=cloudflare&logoColor=white)](https://pages.cloudflare.com/)
-[![Live demo](https://img.shields.io/badge/demo-posewear.pages.dev-ff2442)](https://posewear.pages.dev)
-[![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=black)](https://github.com/atuizz/posewear/stargazers)
+[![Live demo](https://img.shields.io/badge/demo-posewear.pages.dev-ff2442?style=flat)](https://posewear.pages.dev/)
+[![12 libraries](https://img.shields.io/badge/libraries-12%20%C2%B7%205%2C700%2B-111111?style=flat)](#twelve-libraries-at-a-glance)
+[![GitHub release](https://img.shields.io/github/v/release/atuizz/posewear?style=flat&color=111111)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=flat)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=111111)](https://github.com/atuizz/posewear/stargazers)
 
-[Live site](https://posewear.pages.dev/) · [简体中文](README.md) · [日本語](README.ja.md) · [Changelog](CHANGELOG.md)
+**[Live Site](https://posewear.pages.dev/)** · [Highlights](#highlights) · [Libraries](#twelve-libraries-at-a-glance) · [Generation Modes](#three-ways-to-generate) · [Run Locally](#run-locally) · [简体中文](README.md) · [日本語](README.ja.md) · [Changelog](CHANGELOG.md)
+
+<br>
+
+<img src="docs/banner.jpg" alt="Portrait + pose + outfit = result" width="900">
+
+<sub>Example generated from a PoseWear portrait, pose, and outfit. Source image rights belong to their respective creators; see Sources and licenses below.</sub>
 
 </div>
 
 > [!CAUTION]
-> **Beware of impostors**: official access is only via [posewear.pages.dev](https://posewear.pages.dev/) and this repository — free, with no accounts and no paid plans. PoseWear has no Windows or Android app, and is never distributed as an exe/apk through any file-sharing service. Sites such as posewear.cn and posewear.art claiming to be official, offering exe/apk downloads, or asking you to sign in or pay are impersonators — do not download, sign in, pay, or enter an API key there.
+> **Beware of impostors**: official access is only via [posewear.pages.dev](https://posewear.pages.dev/) and this repository — free, with no accounts and no paid plans. PoseWear has no Windows or Android app, and is never distributed as an exe/apk through any file-sharing service. Sites such as `posewear.cn` and `posewear.art` claiming to be official, offering exe/apk downloads, or asking you to sign in or pay are impersonators — do not download, sign in, pay, or enter an API key there.
 
 ---
 
-## Finding references
+## Highlights
 
-- **Poses come in pairs**: every pose has a line sketch and a depth map from the same camera angle. Flip between them on the card, or send both to generation together.
-- **A floating workspace collects as you browse**: tap + on any card to drop it into the tray at the bottom. Generate from the tray, or copy the whole set — prompts plus public image links.
-- **The full studio mixes freely**: a person, an outfit, poses, plus expressions, hair, scenes, lighting, props, and furniture. Use as many or as few as you like — a prompt alone works too. Upload your own photo to try outfits on.
-- Everything you generate is kept under History, ready to view, download, or export as ZIP.
+### Artist Lightbox Studio · Live Line-Art × Depth Split Compare
 
-![Studio](docs/studio-en.jpg)
+<p align="center">
+  <img src="docs/lightbox-en.jpg" alt="Artist lightbox inspection studio with live line-art and depth split compare and composition grid" width="900">
+</p>
 
-<table><tr>
-<td width="33%"><img src="docs/home-en.jpg" alt="Library home"><br><sub>Twelve libraries, bilingual prompts</sub></td>
-<td width="33%"><img src="docs/mobile-en.jpg" alt="Browsing on a phone"><br><sub>Works on your phone, too</sub></td>
-<td><img src="docs/dark-en.jpg" alt="Dark mode"><br><sub>Dark mode, follows your system by default</sub></td>
-</tr></table>
+Every pose comes paired with a **line sketch** and a **matching depth map** from the exact same camera angle. Flip any card in place from its badge, or open the lightbox to inspect with built-in artist tools:
 
-The interface speaks English, Chinese, and Japanese; reference descriptions switch between Chinese and English.
+- **`Z` / Double-click**: 2× zoom with drag-to-pan for folds, hands, and perspective details
+- **`H` Mirror**: instant horizontal flip to check balance and anatomical proportions
+- **`G` Composition Grid**: cycle between rule-of-thirds and center-axis / quarter proportion guides
+- **`B` Grayscale Value Study & Auto Color Palette**: toggle luminance grayscale for tonal study and extract up to 5 real `#HEX` swatches from color photos (one click to copy)
+- **`V` Split Compare**: drag a live curtain between line art and depth map from the same angle
 
 ---
 
-## Three ways to generate
+### Creative Studio · Numbered Reference Board & Try-On
 
-| Way | How it works |
-| --- | --- |
-| **Your own API key** | Use OpenAI, Gemini, or Seedream keys in the studio, or any endpoint compatible with the OpenAI, Gemini, or xAI image protocols. Requests go straight from your browser, or through the site proxy (relays may use http/https and any port). |
-| **A model on your machine** | If you run ComfyUI or stable-diffusion.cpp, connect the local engine and generate without images leaving your computer. [Setup guide](docs/local-engines.md) |
-| **Your AI agent** | The repo ships an MCP server so an agent can search references, fetch a specific angle, and assemble prompts with image links. [MCP guide](mcp/README.md) |
+<p align="center">
+  <img src="docs/studio-en.jpg" alt="Creative studio with numbered reference board cards and camera angle badges" width="900">
+</p>
+
+<table>
+  <tr>
+    <td width="33.3%" valign="top">
+      <img src="docs/home-en.jpg" alt="Outfit library with visual color swatch filters"><br>
+      <b>Visual Color Swatches & Bilingual Prompts</b><br>
+      <sub>Filter outfits by real color swatches; copying any card or set includes exact-angle public image links.</sub>
+    </td>
+    <td width="33.3%" valign="top">
+      <img src="docs/dark-en.jpg" alt="Dark mode gallery and floating workspace dock"><br>
+      <b>Dark Canvas & Floating Workspace</b><br>
+      <sub>Collect references without leaving the gallery, edit prompts in the dock, and generate on the spot.</sub>
+    </td>
+    <td width="33.3%" valign="top">
+      <img src="docs/mobile-en.jpg" alt="Mobile touch browsing and card flip"><br>
+      <b>Built for Touch & Mobile</b><br>
+      <sub>Flip poses, switch angles, assemble sets, and review history comfortably on a phone.</sub>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <b>Numbered Board & One-Click Moodboard PNG Export</b><br>
+      Each card displays its send index (<code>1 / 2 / 3</code>) and camera angle matching <code>image 1 / 2 / 3</code> in the prompt. Shuffle looks, clear with Undo, and <b>export a high-resolution reference sheet PNG</b> ready for Midjourney, Kling, PureRef, or sharing.
+    </td>
+    <td width="50%" valign="top">
+      <b>Fullscreen Gesture Drawing Studio</b><br>
+      Launch a distraction-free timed practice session from your current filtered gallery—with <code>30s / 60s / 2m / 5m</code> timers, <code>5 / 10 / 20 / Endless</code> decks, optional chime, mirror / grid / grayscale / depth-flip tools, and a clickable session recap sheet.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <b>Local History with Reference Traceability</b><br>
+      Generated outputs stay in your browser’s IndexedDB with mode filters (Try-on / Generate), prompt/model search, clickable thumbnails of the exact references used inside the lightbox, single downloads, and batch ZIP export.
+    </td>
+    <td width="50%" valign="top">
+      <b>Global Command Palette (⌘K) & Fast Picker</b><br>
+      Press <code>⌘K</code> / <code>Ctrl+K</code> anywhere to jump across all 12 libraries, search, launch Gesture Practice, or toggle themes & languages; the studio picker adds category chips, Favorites-only filtering, and drag-and-drop uploads.
+    </td>
+  </tr>
+</table>
+
+---
+
+## Twelve Libraries at a Glance
+
+| Group | Libraries | Items | Highlights |
+| :--- | :--- | :---: | :--- |
+| **Movement** | Poses · Depth poses | `288` × 2 | Paired line sketches and depth maps, multiple angles, in-place card flip & lightbox split compare |
+| **People** | Portraits · Expressions · Hairstyles | `1,499` / `95` / `122` | CC0 fictional portraits, ICT-FaceKit expression intensity filters, multi-color hairstyle variants |
+| **Wardrobe** | Outfits · Anime outfits · Historical dress | `1,407` / `1,760` / `57` | Visual color swatches & garment filters spanning contemporary, anime, and period outfits |
+| **Setting** | Scenes · Lighting · Props · Furniture | `64` / `50` / `32` / `41` | Multi-angle environments, lighting setups, props, and furniture for full scene composition |
+
+---
+
+## Three Ways to Generate
+
+| Mode | Best For | How It Works |
+| :--- | :--- | :--- |
+| **Cloud API Key** | Fastest setup & top multi-image models | Connect OpenAI, Gemini, Seedream, or any OpenAI / Gemini / xAI-compatible relay. Send directly from your browser or via the site proxy (`http`/`https` and any port supported for custom relays). |
+| **Local Engine** | Full privacy & zero API cost | Connect **ComfyUI** or **stable-diffusion.cpp** (`sd-server`) running on your own machine—images never leave your device. Supports built-in single-ref and custom multi-ref ComfyUI API workflows. [Setup guide →](docs/local-engines.md) |
+| **AI Agent (MCP)** | Automated reference hunting in Codex / Claude | Ships a read-only stdio MCP server and reference-picking skill so your agent can search all 12 libraries, pick exact angles, and assemble briefs with image links. [MCP guide →](mcp/README.md) |
 
 ```sh
+# Connect the MCP server (Codex example)
 codex mcp add posewear -- node "$PWD/mcp/server.mjs"
 ```
 
-Then just ask: “Find a side-view sitting pose with a spring outfit — give me the prompt and reference links.”
+> Then just ask: “Find a side-view sitting pose with a spring outfit — give me the prompt and reference links.”
 
 ---
 
-## Run it locally
+## Run Locally
 
-Requires Node.js 22.12+:
+Requires **Node.js 22.12+** — no bundler, no database:
 
 ```sh
 git clone https://github.com/atuizz/posewear.git
@@ -72,30 +139,67 @@ npm ci
 npm start
 ```
 
-Open http://127.0.0.1:8787/ . Browsing, favorites, and copying need no account or key. Catalogs load from the public site on first open; images load on demand.
+Open `http://127.0.0.1:8787/`. Browsing, favorites, and copying require no account or API key; catalogs load from the public site on first open and images load on demand.
 
-Favorites, settings, and API keys live only in your browser; generation history lives in the browser database. Clearing site data removes them.
+- **No accounts**: zero sign-ups, zero server-side tracking
+- **Browser-local state**: favorites, settings, and API keys stay in `localStorage`; history stays in IndexedDB
+- **Clean removal**: clearing site data removes all local data immediately
+
+<details>
+<summary><b>Keyboard Shortcuts</b></summary>
+
+| Key | Action |
+| :---: | :--- |
+| `⌘K` / `Ctrl+K` | Open global Command Palette (libraries, search, Gesture Studio, settings) |
+| `/` | Focus search |
+| `R` | Pick a random reference |
+| `T` | Toggle light / dark theme (works in gallery & lightbox) |
+| `L` | Switch reference description language (ZH / EN) |
+| `1` – `9` | Jump across libraries |
+| `←` `→` / `↑` `↓` | Lightbox: previous / next item, switch camera angle |
+| `Z` / `H` / `G` / `B` / `V` | Lightbox: 2× zoom / mirror / composition grid / grayscale value check / split depth compare |
+| `Space` | Gesture Studio: pause / resume timer |
+| `F` / `A` / `C` / `S` | Lightbox: favorite / add to set / copy prompt / share link |
+| `Esc` | Close lightbox, Gesture Studio, Command Palette, or dialog |
+
+</details>
 
 ---
 
-## Development
+## Development & Tests
 
-Vanilla JS, a Python build, and Cloudflare Pages — no framework. Build, assets, tests, and deployment are documented in [AGENTS.md](AGENTS.md); `npm test` runs the regression suite.
+Pure static architecture: **vanilla JS + Python build + Cloudflare Pages** (no framework, no bundler). See [AGENTS.md](AGENTS.md) for asset setup, build steps, and deployment checks.
 
-Current release **v1.3.2** (2026-11-24): the impersonation notice now also names posewear.art; the official site is free, with no accounts and no paid plans. [All releases](CHANGELOG.md)
+```sh
+# Offline regression suite (works cleanly from source with no asset archive)
+npm run test:offline
+
+# Full site regression suite (against local preview or staging build)
+npm test
+```
+
+Current release **v1.3.2** (2026-11-24) · [Full changelog](CHANGELOG.md)
 
 ---
 
-## Sources and licenses
+## Sources and Licenses
 
-Code, UI text, and build scripts are [MIT](LICENSE). Self-host, fork, package it as a client, even run it commercially — all fine. One condition: don’t use the PoseWear name and don’t pass yourself off as the official project; just credit the source. Note that image licenses are separate from the code license: some upstream galleries below don’t allow commercial use or redistribution, so clear rights with the original authors before any commercial use, at your own risk. Image sources:
+Code, UI copy, and build scripts are licensed under [MIT](LICENSE). Self-hosting, forking, packaging as a client, or commercial operation are all allowed — **with one condition: do not use the PoseWear name, do not impersonate the official project, and credit the source**.
 
-| Material | Source |
-| --- | --- |
-| Poses, depth poses, outfits, anime outfits | ギア / @giaaibusi — ask the author before commercial use or redistribution. [Sketches](https://ai-pose-gallery.pages.dev/) · [Depth](https://ai-pose-depth-gallery.pages.dev/) · [Outfits](https://ai-costume-gallery.pages.dev/) · [Anime outfits](https://ai-costume-anime-gallery.pages.dev/) |
-| Portraits | Fictional AI portraits by @agi_aibusi, CC0; the author asks that they not be reposted in bulk unchanged. [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/) |
-| Hair and some anime outfits | たき AI / CharaDB, tags CC0, images load from the source site. [CharaDB](https://charadb-2fi.pages.dev/) |
-| Expressions | WaveSpeed AI Emotion Gallery; head model ICT FaceKit (© USC Institute for Creative Technologies, MIT) |
-| Historical dress, scenes, lighting, props, furniture | Shisei / wquguru, CC0 1.0 |
+Image rights are separate from the code license: some upstream galleries below restrict commercial use or redistribution. Clear rights with the original creators before any commercial use, at your own risk.
 
-Inspired by [gen-ai-pose-image](https://github.com/wzc520pyfm/gen-ai-pose-image) and [nvzhuang](https://github.com/paipiange/nvzhuang) — thank you.
+| Libraries | Source & License |
+| :--- | :--- |
+| Poses, depth poses, outfits, anime outfits | ギア / [@giaaibusi](https://x.com/giaaibusi) — contact the creator before commercial use or redistribution. [Sketches](https://ai-pose-gallery.pages.dev/) · [Depth](https://ai-pose-depth-gallery.pages.dev/) · [Outfits](https://ai-costume-gallery.pages.dev/) · [Anime outfits](https://ai-costume-anime-gallery.pages.dev/) |
+| Portraits | Fictional AI portraits by @agi_aibusi (CC0); please avoid bulk unmodified reposts. [AI Portrait Gallery](https://ai-portrait-gallery.pages.dev/) |
+| Hairstyles & selected anime outfits | たき AI / CharaDB — tags CC0, images hotlinked from source. [CharaDB](https://charadb-2fi.pages.dev/) |
+| Expressions | WaveSpeed AI Emotion Gallery; head model ICT-FaceKit (© USC Institute for Creative Technologies, MIT) |
+| Historical dress, scenes, lighting, props, furniture | Shisei / wquguru (CC0 1.0) |
+
+<div align="center">
+
+<br>
+
+<sub>Inspired by <a href="https://github.com/wzc520pyfm/gen-ai-pose-image">gen-ai-pose-image</a> and <a href="https://github.com/paipiange/nvzhuang">nvzhuang</a> — thank you.</sub>
+
+</div>

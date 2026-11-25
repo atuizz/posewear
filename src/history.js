@@ -10,11 +10,24 @@
   const providerName = r => r.prov === 'local' ? (r.model || '本机引擎') : (PROV_NAME[r.prov] || r.prov);
 
   let L = [];
+  let filterMode = 'all';
+  let filterQuery = '';
   const sel = new Set();
   let curIndex = -1;
   let blobUrls = [];
   let lbUrls = [];
   let opener = null;
+
+  const visibleRecords = () => {
+    const words = filterQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    return L.filter(r => {
+      if (filterMode === 'tryon' && r.mode == 'gen') return false;
+      if (filterMode === 'gen' && r.mode != 'gen') return false;
+      if (!words.length) return true;
+      const hay = [r.label, r.prompt, r.orig, r.model, providerName(r)].filter(Boolean).join(' ').toLowerCase();
+      return words.every(w => hay.includes(w));
+    });
+  };
 
   const U = b => {
     if (!b) return '';
@@ -87,9 +100,11 @@
   };
 
   function updateToolbar() {
+    const V = visibleRecords();
     const total = L.length;
+    const shown = V.length;
     const cntEl = $('#histCount');
-    if (cntEl) cntEl.innerHTML = total ? `<b>${total}</b> 条记录` : '';
+    if (cntEl) cntEl.innerHTML = total ? (shown === total ? `<b>${total}</b> 条记录` : `<b>${shown}</b> / ${total} 条记录`) : '';
 
     const selN = sel.size;
     const selNEl = $('#histSelN');
@@ -98,11 +113,12 @@
       if (selN > 0) selNEl.innerHTML = `已选 <b>${selN}</b> 张`;
     }
 
+    const visSel = V.filter(r => sel.has(r.t)).length;
     const selAllBox = $('#histSelAll');
     if (selAllBox) {
-      selAllBox.checked = total > 0 && selN === total;
-      selAllBox.indeterminate = selN > 0 && selN < total;
-      selAllBox.disabled = total === 0;
+      selAllBox.checked = shown > 0 && visSel === shown;
+      selAllBox.indeterminate = visSel > 0 && visSel < shown;
+      selAllBox.disabled = shown === 0;
     }
 
     const zipBtn = $('#histZip');
@@ -111,6 +127,12 @@
     if (expBtn) expBtn.disabled = selN === 0;
     const clrBtn = $('#histClr');
     if (clrBtn) clrBtn.disabled = total === 0;
+
+    $$('#histFilter [data-hf]').forEach(b => {
+      const on = b.dataset.hf === filterMode;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
 
     const nHist = $('#nHist');
     if (nHist) nHist.textContent = total || '';
@@ -158,7 +180,22 @@
     if (bar) bar.hidden = false;
     if (stats) stats.hidden = false;
 
-    grid.innerHTML = L.map((r, i) => {
+    const V = visibleRecords();
+    if (!V.length) {
+      grid.innerHTML = `<div class="hist-nomatch"><p>没有找到匹配的生成记录</p><button type="button" class="sm" id="histResetFilter">显示全部</button></div>`;
+      $('#histResetFilter').onclick = () => {
+        filterMode = 'all';
+        filterQuery = '';
+        const q = $('#histQ');
+        if (q) q.value = '';
+        renderGrid();
+      };
+      renderStats();
+      updateToolbar();
+      return;
+    }
+
+    grid.innerHTML = V.map((r, i) => {
       const u = U(r.after);
       const isSel = sel.has(r.t);
       const d = new Date(r.t);
@@ -232,12 +269,16 @@
     await WB.show();
     const W = WB._W;
     if (W) {
+      let w = 0, h = 0;
+      const bmp = await createImageBitmap(r.after).catch(() => null);
+      if (bmp) { w = bmp.width; h = bmp.height; bmp.close(); }
       W.mode = 'tryon';
+      W.view = 'board';
       W.persons = [{
         blob: r.after,
         url: URL.createObjectURL(r.after),
-        w: 1024,
-        h: 1024
+        w: w || undefined,
+        h: h || undefined
       }];
     }
     A.lbClose(true);
@@ -246,13 +287,15 @@
   }
 
   function openLb(index, srcCard) {
-    if (index < 0 || index >= L.length) return;
+    const V = visibleRecords();
+    if (index < 0 || index >= V.length) return;
     curIndex = index;
-    const r = L[curIndex];
+    const r = V[curIndex];
     if (!r) return;
 
     const lb = $('#lb');
     if (!lb) return;
+    A.lbResetView?.(true);
     opener = srcCard?.querySelector('.hopen');
     lb.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -277,8 +320,44 @@
     setTimeout(() => $('.lb-x')?.focus({ preventScroll: true }), 60);
   }
 
+  function drawLbRefs(r, container) {
+    if (!container || !r.inputs) return;
+    const inputs = r.inputs;
+    const refs = [
+      ...(inputs.persons || []).filter(x => x.k || x.blob),
+      ...(inputs.garments || []),
+      ...(inputs.poses || []),
+      ...(inputs.exprs || []),
+      ...(inputs.extraRefs || [])
+    ];
+    if (!refs.length) return;
+    const keys = refs.filter(x => x.k).map(x => x.k);
+    const paint = () => {
+      if (!container.isConnected || visibleRecords()[curIndex] !== r) return;
+      const cards = refs.map(ref => {
+        if (ref.blob) {
+          const u = URL.createObjectURL(ref.blob);
+          lbUrls.push(u);
+          return `<span class="hlb-ref" title="${esc(ref.name || '本地上传')}"><img src="${u}" alt=""></span>`;
+        }
+        const it = A.ITEMS[ref.k];
+        if (!it) return '';
+        const src = it.angles ? A.ath(it.angles[ref.ai ?? it.ai].t) : A.thumb(it);
+        const ang = it.angles?.[ref.ai ?? it.ai]?.zh;
+        const label = [A.title(it), ang].filter(Boolean).join(' · ');
+        return `<a class="hlb-ref" href="#${esc(it.type)}/${esc(it.id)}" data-href-ref title="${esc(label)}"><img src="${esc(src)}" alt="${esc(label)}"${it.ref ? ` referrerpolicy="${esc(it.ref)}"` : ''}></a>`;
+      }).filter(Boolean);
+      if (!cards.length) return;
+      container.innerHTML = `<small class="hlb-refs-h">所用参考图</small><div class="hlb-refs-row">${cards.join('')}</div>`;
+      container.hidden = false;
+    };
+    if (keys.every(k => A.ITEMS[k])) paint();
+    else A.needKeys(keys).then(paint).catch(() => {});
+  }
+
   function drawLb() {
-    const r = L[curIndex];
+    const V = visibleRecords();
+    const r = V[curIndex];
     if (!r) return;
     cleanupLbUrls();
 
@@ -317,25 +396,28 @@
 
     const side = $('#lbSide');
     if (!side) return;
+    const cpSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15 5V4H5v11h1"/></svg>';
     side.innerHTML = `
-      <div class="mu">生成记录 · 第 ${curIndex + 1} / ${L.length} 项</div>
+      <div class="mu">生成记录 · 第 ${curIndex + 1} / ${V.length} 项</div>
       <h2>${r.mode == 'gen' ? '自由生图' : '虚拟试穿'} · ${esc(prov)}</h2>
       <div class="mu">${dateStr} · 模型 ${esc(r.model || '默认')}${r.label ? ' · ' + esc(r.label) : ''}</div>
       ${cmpHtml}
+      <div class="hlb-refs" id="hlbRefs" hidden></div>
       <div class="pbox" style="margin-top:14px">
-        <small>提示词 · PROMPT${r.neutral ? '（已减少误拦截）' : ''}</small>
+        <div class="pbox-h"><small>提示词 · PROMPT${r.neutral ? '（已减少误拦截）' : ''}</small>${r.prompt ? `<button class="sm pbox-cp pri" data-hlb="cp">${cpSvg}<span>复制提示词</span></button>` : ''}</div>
         <p>${esc(r.prompt || '（无提示词）')}</p>
-        ${r.prompt ? '<button class="sm pri" data-hlb="cp">复制提示词</button>' : ''}
       </div>
       ${r.orig ? `<details class="raw" style="margin-top:10px"><summary>原始提示词</summary><pre>${esc(r.orig)}</pre><button class="sm ghost" data-hlb="cporig">复制</button></details>` : ''}
       <div class="acts" style="margin-top:16px">
         <button class="pri" data-hlb="dl">下载图片</button>
         <button data-hlb="regen">用此设置重新生成</button>
         ${r.mode != 'gen' && r.after ? '<button data-hlb="person">用作人物照片</button>' : ''}
-        <button data-hlb="del" class="ghost" style="color:var(--err,#e53e3e)">删除此记录</button>
+        <button data-hlb="del" class="ghost hlb-del">删除此记录</button>
       </div>
-      <p class="mu" style="margin-top:22px;line-height:2.1"><kbd>←</kbd><kbd>→</kbd>切换记录　<kbd>C</kbd>复制提示词　<kbd>Esc</kbd>关闭</p>
+      <p class="mu lb-keys"><kbd>←</kbd><kbd>→</kbd>切换记录　<kbd>C</kbd>复制提示词　<kbd>Esc</kbd>关闭</p>
     `;
+
+    drawLbRefs(r, $('#hlbRefs'));
 
     const slider = side.querySelector('.hlb-cmp input[type=range]');
     if (slider) {
@@ -347,8 +429,9 @@
   }
 
   function stepLb(delta) {
-    if (!L.length) return;
-    curIndex = (curIndex + delta + L.length) % L.length;
+    const V = visibleRecords();
+    if (!V.length) return;
+    curIndex = (curIndex + delta + V.length) % V.length;
     drawLb();
     if (!motionPreference.matches) {
       const img = $('#lbImg');
@@ -398,9 +481,9 @@
       } else if (k == 'c') {
         e.preventDefault();
         e.stopImmediatePropagation();
-        const r = L[curIndex];
+        const r = visibleRecords()[curIndex];
         if (r?.prompt) copyRecord(r,r.prompt);
-      } else if (k == 'f' || k == 'a' || k == 's') {
+      } else if (k == 'f' || k == 'a' || k == 's' || k == 'z' || k == 'h' || k == 'g' || k == 'v') {
         e.preventDefault();
         e.stopImmediatePropagation();
       }
@@ -410,13 +493,20 @@
   // Hook side actions
   $('#lbSide')?.addEventListener('click', async e => {
     if (A.st.tab != 'history') return;
+    if (e.target.closest('[data-href-ref]')) {
+      A.lbClose(true);
+      return;
+    }
     const b = e.target.closest('[data-hlb]');
     if (!b) return;
     const act = b.dataset.hlb;
-    const r = L[curIndex];
+    const r = visibleRecords()[curIndex];
     if (!r) return;
 
-    if (act == 'cp') copyRecord(r,r.prompt);
+    if (act == 'cp') {
+      copyRecord(r,r.prompt);
+      b.classList.add('copied');clearTimeout(b._ct);b._ct=setTimeout(()=>b.classList.remove('copied'),1200);
+    }
     if (act == 'cporig') copyRecord(r,r.orig);
     if (act == 'dl') dlOne(r);
     if (act == 'regen') {
@@ -438,7 +528,8 @@
     if (!card) return;
     const t = +card.dataset.t;
     const i = +card.dataset.i;
-    const r = L.find(x => x.t == t) || L[i];
+    const V = visibleRecords();
+    const r = V.find(x => x.t == t) || V[i];
     if (!r) return;
 
     if (e.target.classList.contains('hsel')) {
@@ -469,12 +560,29 @@
     }
   });
 
+  // Filter & Search events
+  $('#histFilter')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-hf]');
+    if (!b || b.dataset.hf === filterMode) return;
+    filterMode = b.dataset.hf;
+    renderGrid();
+  });
+  let hqTimer;
+  $('#histQ')?.addEventListener('input', e => {
+    clearTimeout(hqTimer);
+    hqTimer = setTimeout(() => {
+      filterQuery = e.target.value;
+      renderGrid();
+    }, 120);
+  });
+
   // Toolbar events
   $('#histSelAll')?.addEventListener('change', e => {
+    const V = visibleRecords();
     if (e.target.checked) {
-      L.forEach(r => sel.add(r.t));
+      V.forEach(r => sel.add(r.t));
     } else {
-      sel.clear();
+      V.forEach(r => sel.delete(r.t));
     }
     $$('#histGrid .hist-card').forEach(c => {
       const isSel = sel.has(+c.dataset.t);

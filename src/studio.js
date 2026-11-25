@@ -11,7 +11,7 @@ if(localEngine){
  const name=localEngine==='comfyui'?'ComfyUI':'sd.cpp';
  PROV.local={name,base:'',model:name,models:[]};
  const label=document.createElement('label');
- label.innerHTML='<input type="radio" name="prov" value="local"><span><i class="lg">⌂</i><b>'+name+'</b><small>本机引擎</small></span>';
+ label.innerHTML='<input type="radio" name="prov" value="local"><span><i class="lg local-lg"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M8 20h8m-4-4v4"/></svg></i><b>'+name+'</b><small>本机引擎</small></span>';
  $('#cfg .prov').append(label);
 }
 const configured=(settings=cfg)=>settings.prov==='local'?!!localEngine&&(!localPreset||!!settings.checkpoint):!!settings.key;
@@ -31,7 +31,7 @@ const ANG_EN={'正面':'front view','斜侧':'three-quarter view','侧面':'side
 const MATERIAL_ROLES={hair:['发型','Hairstyle'],scene:['场景','Scene'],light:['光影','Lighting'],prop:['道具','Prop'],furn:['家具','Furniture']};
 const preferredMode=LS('wbMode');
 let autoMode=!preferredMode;
-const W={mode:preferredMode||'gen',persons:[],garments:[],poses:[],exprs:[],extraRefs:[],char:LS('wbChar')||'asia',charTxt:LS('wbCharTxt')||'',style:LS('wbStyle')||'keep',bm:LS('wbBm')||'each',pl:LS('wbPl')||'en',keepBg:LS('wbKeepBg')??true,busy:null,dirty:false,results:[],ri:0,cmp:true};
+const W={mode:preferredMode||'gen',persons:[],garments:[],poses:[],exprs:[],extraRefs:[],char:LS('wbChar')||'asia',charTxt:LS('wbCharTxt')||'',style:LS('wbStyle')||'keep',bm:LS('wbBm')||'each',pl:LS('wbPl')||'en',keepBg:LS('wbKeepBg')??true,busy:null,dirty:false,results:[],ri:0,cmp:true,view:'board'};
 // item: {kind:'lib',k,ai?} | {kind:'file',blob,url,name}
 const g0=LS('wbSel')||{};
 const savedDraft=LS('wbDraft');
@@ -53,8 +53,9 @@ function configError(settings){
  if(settings.prov==='local')return localPreset&&!settings.checkpoint?'请先测试连接并选择本机模型':'';
  if(settings.prov=='custom'&&!settings.base)return '自定义中转需要填写 Base URL';
  if(!settings.base)return '';
- try{const u=new URL(settings.base);if(u.protocol=='https:'&&!u.username&&!u.password)return ''}catch{}
- return 'Base URL 需填写有效的 HTTPS 地址，请勿在地址中包含账号或密码。';
+ const allowHttp=settings.prov==='custom';
+ try{const u=new URL(settings.base);if((u.protocol==='https:'||(allowHttp&&u.protocol==='http:'))&&!u.username&&!u.password)return ''}catch{}
+ return allowHttp?'Base URL 需填写有效的 HTTP/HTTPS 地址，请勿在地址中包含账号或密码。':'Base URL 需填写有效的 HTTPS 地址，请勿在地址中包含账号或密码。';
 }
 function loadImg(src){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>j(Error('图片读取失败'));i.src=src})}
 async function toJpeg(src,max=1536){const i=await loadImg(src);let w=i.naturalWidth,h=i.naturalHeight,s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);
@@ -164,11 +165,31 @@ function renderOther(){
  $('#wbOtherRefs').innerHTML=W.extraRefs.map((ref,i)=>pickRow(ref,'other',i)).join('');
 }
 let exampleRefs=[];
+function syncCanvasView(){
+ const hasOut=W.results.length>0;
+ const sw=$('#wbCanvasSwitch');
+ if(sw){
+  sw.hidden=!hasOut;
+  sw.querySelectorAll('[data-cv]').forEach(b=>{
+   const on=b.dataset.cv===W.view;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+  });
+ }
+ const showResult=hasOut&&W.view==='result';
+ $('#wbPh0').hidden=showResult;
+ $('#wbCmp').hidden=!showResult;
+ $('#wbRes').hidden=!showResult||W.results.length<2;
+ $('#wbOutAct').hidden=!showResult;
+ const sent=$('#wbSentD');if(sent)sent.hidden=!showResult||!W.results[W.ri]?.prompt;
+ const exportBtn=$('#wbExportBoard');
+ if(exportBtn)exportBtn.hidden=showResult||!(W.persons.length||W.garments.length||W.poses.length||W.exprs.length||W.extraRefs.length);
+}
 function paintBoard(){
- const output=W.results.length>0;
+ const hasOut=W.results.length>0;
+ const output=hasOut&&W.view==='result';
  const chosen=[...W.persons.map(ref=>['portrait',ref]),...W.garments.map(ref=>['costume',ref]),
                ...W.poses.map(ref=>['pose',ref]),...W.exprs.map(ref=>['expr',ref]),...W.extraRefs.map(ref=>[A.ITEMS[ref.k].type,ref])];
  const example=!chosen.length;
+ syncCanvasView();
  $('#wbCanvasTitle').textContent=output?'生成结果':example&&exampleRefs.length?'搭配示例':'参考画板';
  const ratio=$('#wbAR').value;
  $('#wbCanvasRatio').textContent=!output&&ratio!=='auto'?ratio:'';
@@ -177,21 +198,192 @@ function paintBoard(){
  const cards=$('#wbBoardCards');
  cards.classList.toggle('sample',example);
  cards.classList.toggle('many',refs.length>3);
- cards.innerHTML=refs.map(([type,ref])=>{
+ cards.innerHTML=refs.map(([type,ref],idx)=>{
   const item=A.ITEMS[ref.k];
   const source=thumbnail(ref,item),material=item?.type||type;
   const label=item?A.title(item):ref.name||boardLabels[type];
-  return `<button class="board-card" data-pick="${material}" data-type="${material}"${item?` data-pk-key="${esc(item.k)}"`:''} title="${esc(label)}"><img src="${esc(source)}" alt="${esc(label)}"${item?.ref?` referrerpolicy="${esc(item.ref)}"`:''}><span>${boardLabels[material]}</span></button>`;
+  const angle=!example&&item?.angles?.[ref.ai??item.ai]?.zh;
+  const idxBadge=example?'':`<i class="board-idx" aria-hidden="true">${idx+1}</i>`;
+  const angBadge=angle?`<em class="board-ang">${esc(angle)}</em>`:'';
+  return `<button class="board-card" data-pick="${material}" data-type="${material}"${item?` data-pk-key="${esc(item.k)}"`:''} title="${esc(label)}">${idxBadge}<img src="${esc(source)}" alt="${esc(label)}"${item?.ref?` referrerpolicy="${esc(item.ref)}"`:''}>${angBadge}<span>${boardLabels[material]}</span></button>`;
  }).join('');
- $('#wbExample').hidden=!example||!refs.length;
+ const showActions=example&&refs.length>0;
+ if($('#wbBoardActions'))$('#wbBoardActions').hidden=!showActions;
+ $('#wbExample').hidden=!showActions;
+ if($('#wbShuffle'))$('#wbShuffle').hidden=!showActions;
 }
-async function loadExample(){
- if(exampleRefs.length)return;
+const BOARD_ACCENT={pose:'#849dbb',depth:'#9689ae',costume:'#be929a',anime:'#b08fad',portrait:'#c49a82',expr:'#a2778b',hair:'#968071',dyn:'#ab7870',scene:'#88a48a',light:'#a2b6bf',prop:'#739e9c',furn:'#95928e'};
+function roundRectPath(ctx,x,y,w,h,r){
+ ctx.beginPath();
+ ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+ ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function clipText(ctx,str,maxW){
+ const s=String(str||'').replace(/\s+/g,' ').trim();
+ if(!s||ctx.measureText(s).width<=maxW)return s;
+ let lo=0,hi=s.length;
+ while(lo<hi){const mid=(lo+hi+1)>>1;if(ctx.measureText(s.slice(0,mid)+'…').width<=maxW)lo=mid;else hi=mid-1}
+ return s.slice(0,lo)+'…';
+}
+function loadBoardImage(ref,item){
+ return new Promise(resolve=>{
+  const img=new Image();
+  let src='';
+  if(ref.blob||ref.url&&!item)src=ref.url;
+  else if(item&&!item.ext)src=item.angles?(item.angles[ref.ai??item.ai]?.i||item.angles[ref.ai??item.ai]?.t):(item.m||item.i||item.t);
+  else if(item?.ext){img.crossOrigin='anonymous';if(item.ref)img.referrerPolicy=item.ref;src=item.m||item.t}
+  if(!src)return resolve(null);
+  const done=ok=>resolve(ok&&img.naturalWidth?img:null);
+  img.onload=()=>done(true);img.onerror=()=>done(false);
+  img.src=src;
+ });
+}
+async function exportBoardPng(opts={}){
+ const chosen=[...W.persons.map(ref=>['portrait',ref]),...W.garments.map(ref=>['costume',ref]),
+               ...W.poses.map(ref=>['pose',ref]),...W.exprs.map(ref=>['expr',ref]),...W.extraRefs.map(ref=>[A.ITEMS[ref.k].type,ref])];
+ if(!chosen.length)return null;
+ const btn=$('#wbExportBoard');if(btn)btn.disabled=true;
+ const t=s=>window.PWLocale?window.PWLocale.t(s):s;
+ try{
+  const entries=await Promise.all(chosen.map(async([type,ref],idx)=>{
+   const item=A.ITEMS[ref.k],material=item?.type||type;
+   const title=item?A.title(item):(ref.name||t('本地上传'));
+   const angle=item?.angles?.[ref.ai??item.ai]?.zh||'';
+   const img=await loadBoardImage(ref,item);
+   return {idx:idx+1,material,cat:t(boardLabels[material]||material),title,angle:angle?t(angle):'',img,ext:!!item?.ext};
+  }));
+  const dark=document.documentElement.dataset.theme==='dark';
+  const n=entries.length,cols=n<=3?n:n===4?2:n<=6?3:4,rows=Math.ceil(n/cols);
+  const cardW=360,padImg=12,imgW=cardW-padImg*2,imgH=448,capH=68,cardH=padImg+imgH+capH,gap=28,padX=56,headH=96,footH=68;
+  const Wpx=Math.max(840,padX*2+cols*cardW+(cols-1)*gap);
+  const Hpx=headH+rows*cardH+(rows-1)*gap+footH;
+  const cv=document.createElement('canvas');cv.width=Wpx;cv.height=Hpx;
+  const ctx=cv.getContext('2d');
+  const sans='-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Helvetica Neue",Arial,sans-serif';
+  ctx.fillStyle=dark?'#141416':'#f7f7f8';ctx.fillRect(0,0,Wpx,Hpx);
+  ctx.fillStyle=dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.065)';
+  for(let y=24;y<Hpx;y+=24)for(let x=24;x<Wpx;x+=24){ctx.beginPath();ctx.arc(x,y,1,0,Math.PI*2);ctx.fill()}
+  // Header brand mark + title
+  const ac=dark?'#ff3b57':'#ff2442',ink=dark?'#f2f2f2':'#111111',mu=dark?'#9a9a9e':'#666666',cardBg=dark?'#1e1e22':'#ffffff',lineCol=dark?'#323236':'#e4e4e7';
+  ctx.fillStyle=ac;ctx.beginPath();ctx.arc(padX+14,35,4.2,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=ac;ctx.lineWidth=3.2;ctx.lineJoin='round';
+  ctx.beginPath();ctx.moveTo(padX+14,42);ctx.lineTo(padX+3,55);ctx.lineTo(padX+25,55);ctx.closePath();ctx.stroke();
+  ctx.fillStyle=ink;ctx.font=`700 22px ${sans}`;ctx.textBaseline='middle';
+  ctx.fillText('PoseWear',padX+36,46);
+  const brandW=ctx.measureText('PoseWear').width;
+  ctx.fillStyle=mu;ctx.font=`500 16px ${sans}`;
+  ctx.fillText('·  '+t('参考画板'),padX+48+brandW,47);
+  const now=new Date(),stamp=`${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const ar=$('#wbAR').value,metaParts=[`${n} ${t('张')}`,ar!=='auto'?ar:'',stamp].filter(Boolean).join('  ·  ');
+  ctx.textAlign='right';ctx.font=`500 14px ${sans}`;ctx.fillStyle=mu;
+  ctx.fillText(metaParts,Wpx-padX,47);ctx.textAlign='left';
+  let extSkipped=0;
+  entries.forEach((e,i)=>{
+   const r=Math.floor(i/cols),c=i%cols,rowCount=r===rows-1?n-r*cols:cols;
+   const rowW=rowCount*cardW+(rowCount-1)*gap,startX=(Wpx-rowW)/2;
+   const x=startX+c*(cardW+gap),y=headH+r*(cardH+gap),edge=BOARD_ACCENT[e.material]||lineCol;
+   ctx.save();
+   ctx.shadowColor=dark?'rgba(0,0,0,0.45)':'rgba(0,0,0,0.08)';ctx.shadowBlur=22;ctx.shadowOffsetY=8;
+   roundRectPath(ctx,x,y,cardW,cardH,18);ctx.fillStyle=cardBg;ctx.fill();
+   ctx.restore();
+   roundRectPath(ctx,x,y,cardW,cardH,18);ctx.strokeStyle=edge+'77';ctx.lineWidth=1.5;ctx.stroke();
+   const ix=x+padImg,iy=y+padImg;
+   ctx.save();
+   roundRectPath(ctx,ix,iy,imgW,imgH,12);ctx.clip();
+   ctx.fillStyle=e.material==='depth'?'#141414':e.material==='pose'?'#f4f4f4':(dark?'#26262a':'#f3f3f5');
+   ctx.fillRect(ix,iy,imgW,imgH);
+   if(e.img){
+    const pad=e.material==='pose'?16:0,aw=imgW-pad*2,ah=imgH-pad*2;
+    const sc=Math.min(aw/e.img.naturalWidth,ah/e.img.naturalHeight);
+    const dw=e.img.naturalWidth*sc,dh=e.img.naturalHeight*sc;
+    if(e.material==='pose')ctx.globalCompositeOperation='multiply';
+    ctx.drawImage(e.img,ix+pad+(aw-dw)/2,iy+pad+(ah-dh)/2,dw,dh);
+    ctx.globalCompositeOperation='source-over';
+   }else{
+    if(e.ext)extSkipped++;
+    ctx.fillStyle=mu;ctx.font=`500 15px ${sans}`;ctx.textAlign='center';
+    ctx.fillText(e.cat,ix+imgW/2,iy+imgH/2-12);
+    ctx.font=`400 13px ${sans}`;ctx.fillText(clipText(ctx,e.title,imgW-36),ix+imgW/2,iy+imgH/2+14);
+    ctx.textAlign='left';
+   }
+   ctx.restore();
+   // Send-order badge
+   roundRectPath(ctx,ix+10,iy+10,28,28,8);ctx.fillStyle='rgba(17,17,17,0.82)';ctx.fill();
+   ctx.fillStyle='#ffffff';ctx.font=`700 14px ${sans}`;ctx.textAlign='center';ctx.textBaseline='middle';
+   ctx.fillText(String(e.idx),ix+24,iy+24);ctx.textAlign='left';
+   // Angle pill
+   if(e.angle){
+    ctx.font=`600 12px ${sans}`;const aw=ctx.measureText(e.angle).width+18;
+    roundRectPath(ctx,ix+imgW-aw-10,iy+imgH-32,aw,22,11);ctx.fillStyle='rgba(17,17,17,0.78)';ctx.fill();
+    ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.fillText(e.angle,ix+imgW-aw/2-10,iy+imgH-21);ctx.textAlign='left';
+   }
+   // Caption
+   const cy=iy+imgH+22;
+   ctx.fillStyle=edge;ctx.beginPath();ctx.arc(x+20,cy,4.5,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=mu;ctx.font=`600 13px ${sans}`;ctx.fillText(e.cat,x+32,cy);
+   ctx.fillStyle=ink;ctx.font=`600 15px ${sans}`;ctx.fillText(clipText(ctx,e.title,cardW-36),x+18,cy+24);
+  });
+  // Footer colophon
+  const fy=Hpx-footH+24;
+  ctx.strokeStyle=lineCol;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(padX,fy-14);ctx.lineTo(Wpx-padX,fy-14);ctx.stroke();
+  const promptSnippet=clipText(ctx,$('#wbPrompt')?.value||'',Wpx-padX*2-190);
+  ctx.fillStyle=mu;ctx.font=`400 13px ${sans}`;
+  if(promptSnippet)ctx.fillText(promptSnippet,padX,fy+12);
+  ctx.textAlign='right';ctx.font=`600 13px ${sans}`;ctx.fillText('posewear.pages.dev',Wpx-padX,fy+12);
+  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  if(!blob)throw Error('PNG 导出失败');
+  if(opts.download!==false&&window.X?.dl){
+   const fstamp=`${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}-${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+   window.X.dl(blob,`posewear-board-${fstamp}.png`);
+   toast(extSkipped?'已导出参考拼图 PNG（外链图已标出）':'已导出参考拼图 PNG');
+  }
+  return blob;
+ }catch{
+  toast('导出参考拼图失败，请重试');
+  return null;
+ }finally{if(btn)btn.disabled=false}
+}
+$('#wbExportBoard')?.addEventListener('click',()=>exportBoardPng());
+async function loadExample(randomize=false){
+ if(!randomize&&exampleRefs.length)return;
  const types=['portrait','costume','pose'];
  const groups=await Promise.allSettled(types.map(A.load));
- exampleRefs=groups.flatMap(result=>result.status==='fulfilled'?[result.value.find(it=>!it.a)].filter(Boolean):[]);
+ const prevKeys=new Set(exampleRefs.map(it=>it.k));
+ exampleRefs=groups.flatMap(result=>{
+  if(result.status!=='fulfilled')return[];
+  const pool=result.value.filter(it=>!it.a);
+  if(!pool.length)return[];
+  if(!randomize)return[pool[0]];
+  const fresh=pool.filter(it=>!prevKeys.has(it.k));
+  const pickFrom=fresh.length?fresh:pool;
+  return[pickFrom[Math.random()*pickFrom.length|0]];
+ });
  paintBoard();
+ if(randomize&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  $$('#wbBoardCards .board-card').forEach((card,i)=>card.animate([
+   {opacity:0,transform:'translateY(14px) scale(.94)'},
+   {opacity:1}
+  ],{duration:360,delay:i*55,easing:'cubic-bezier(.16,1,.3,1)'}));
+ }
 }
+$('#wbShuffle')?.addEventListener('click',()=>loadExample(true));
+$('#wbCanvasSwitch')?.addEventListener('click',e=>{
+ const b=e.target.closest('[data-cv]');if(!b||!W.results.length)return;
+ W.view=b.dataset.cv;paintBoard();
+ if(W.view==='board'&&!W.persons.length&&!W.garments.length&&!W.poses.length&&!W.exprs.length&&!W.extraRefs.length)loadExample();
+});
+$('#wbClearAll')?.addEventListener('click',()=>{
+ const total=W.persons.length+W.garments.length+W.poses.length+W.exprs.length+W.extraRefs.length;
+ if(!total)return;
+ const snap={persons:W.persons.slice(),garments:W.garments.slice(),poses:W.poses.slice(),exprs:W.exprs.slice(),extraRefs:W.extraRefs.slice(),dirty:W.dirty,prompt:$('#wbPrompt').value,view:W.view};
+ W.persons=[];W.garments=[];W.poses=[];W.exprs=[];W.extraRefs=[];W.dirty=false;W.view='board';
+ saveDraft();render();loadExample();
+ toast('已清空素材',()=>{
+  W.persons=snap.persons;W.garments=snap.garments;W.poses=snap.poses;W.exprs=snap.exprs;W.extraRefs=snap.extraRefs;
+  W.dirty=snap.dirty;W.view=snap.view;
+  render();if(snap.dirty)$('#wbPrompt').value=snap.prompt;saveDraft();
+ });
+});
 $('#wbExample').onclick=async()=>{
  const button=$('#wbExample');button.disabled=true;
  try{
@@ -220,6 +412,8 @@ function render(){
  $('#wbG').innerHTML=W.garments.length?W.garments.map((g,i)=>pickRow(g,'costume',i)).join(''):'<button class="empty0" data-pick="costume"><span><b>选择服装</b></span></button>';
  $('#wbPo').innerHTML=W.poses.length?W.poses.map((p,i)=>pickRow(p,'pose',i)).join(''):`<button class="empty0" data-pick="pose"><span><b>选择姿势</b></span></button>`;
  renderOther();
+ const hasMaterials=W.persons.length+W.garments.length+W.poses.length+W.exprs.length+W.extraRefs.length>0;
+ if($('#wbClearAll'))$('#wbClearAll').hidden=!hasMaterials;
  $('#wbBatch').hidden=poseGroups(W.poses).length<2;$$('[data-bm]').forEach(b=>b.classList.toggle('on',b.dataset.bm==W.bm));$('#wbAllAng').hidden=W.poses.length!=1||!A.ITEMS[(W.poses[0]||{}).k];
  $('#wbStyles').innerHTML=STYLES.map(s=>`<button class="chip ${W.style==s[0]?'on':''}" data-style="${s[0]}">${s[1]}</button>`).join('');$('#wbKeepBg').checked=W.keepBg;$('#wbKeepBg').closest('label').hidden=G||!hasPerson();
  $$('[data-pl]').forEach(b=>b.classList.toggle('on',b.dataset.pl==W.pl));
@@ -238,19 +432,12 @@ const nJobs=()=>(W.bm=='each'?Math.max(1,poseGroups(W.poses).length):1)*(+$('#wb
 function libPortrait(ref){return {kind:'portrait',k:ref.k,url:A.ITEMS[ref.k].m}}
 function addPortrait(it){if(W.persons.length>=3)return toast('最多 3 张人物照片');W.persons.push(libPortrait(it));render();toast(W.mode=='gen'?'已设为脸部参考（生成时保持这张脸）':'已设为人物照片')}
 async function addPersons(files){files=[...files].filter(f=>/^image\//.test(f.type));if(!files.length)return toast('请选择图片文件');for(const f of files){if(W.persons.length>=3){toast('最多 3 张人物照片');break}const u=URL.createObjectURL(f);try{const r=await toJpeg(u,1536);W.persons.push({blob:r.blob,url:URL.createObjectURL(r.blob),w:r.w,h:r.h})}catch(e){toast('无法读取这张图片')}finally{URL.revokeObjectURL(u)}}render()}
-const drop=$('.person-step');$('#wbFile').onchange=e=>{addPersons(e.target.files);e.target.value=''};
-['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
-drop.addEventListener('drop',e=>addPersons(e.dataTransfer.files));for(const label of $$('.upload-link'))label.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();label.querySelector('input').click()}});
-$('#wbGFile').onchange=async e=>{
- const files=[...e.target.files];e.target.value='';
- for(const file of files){
-  if(W.garments.length>=2){toast('最多 2 张服装参考图');break}
-  const url=URL.createObjectURL(file);
-  try{const result=await toJpeg(url,1280);W.garments.push(fileItem(result.blob,file.name))}
-  catch{toast('无法读取服装图')}finally{URL.revokeObjectURL(url)}
- }
- render();
-};
+async function addGarmentFiles(files){files=[...files].filter(f=>/^image\//.test(f.type));if(!files.length)return toast('请选择图片文件');for(const file of files){if(W.garments.length>=2){toast('最多 2 张服装参考图');break}const url=URL.createObjectURL(file);try{const result=await toJpeg(url,1280);W.garments.push(fileItem(result.blob,file.name))}catch{toast('无法读取服装图')}finally{URL.revokeObjectURL(url)}}render()}
+const bindDrop=(el,fn)=>{if(!el)return;['dragenter','dragover'].forEach(t=>el.addEventListener(t,e=>{e.preventDefault();el.classList.add('over')}));['dragleave','drop'].forEach(t=>el.addEventListener(t,e=>{e.preventDefault();el.classList.remove('over')}));el.addEventListener('drop',e=>fn(e.dataTransfer.files))};
+bindDrop($('.person-step'),addPersons);bindDrop($('.garment-step'),addGarmentFiles);
+$('#wbFile').onchange=e=>{addPersons(e.target.files);e.target.value=''};
+for(const label of $$('.upload-link'))label.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();label.querySelector('input').click()}});
+$('#wbGFile').onchange=e=>{addGarmentFiles(e.target.files);e.target.value=''};
 document.addEventListener('paste',e=>{if(document.body.classList.contains('studio')&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){const f=[...e.clipboardData.files].filter(f=>/^image/.test(f.type));if(f.length)addPersons(f)}});
 $('#studio').addEventListener('click',e=>{const t=e.target;let b;
  if(b=t.closest('[data-rm]')){
@@ -301,8 +488,9 @@ function copyStudioBrief(text, inputs, lang) {
 }
 $('#wbCopyP').onclick=()=>copyStudioBrief($('#wbPrompt').value,W,W.pl);
 // ---------- 选择器 ----------
-let pkType='costume',pkSink=null,pkItems=null,pkLastId='',pkTimer;
+let pkType='costume',pkSink=null,pkItems=null,pkLastId='',pkTimer,pkFav=false,pkCat='';
 const poseType=type=>type==='pose'||type==='depth';
+const pkItemCat=it=>it.cat||it.sec||it.era||it.emo||'';
 function pickerRefs(){
  if(pkSink)return pkSink.keys().map(k=>A.ITEMS[k]).filter(A.ok);
  if(poseType(pkType))return W.poses;
@@ -312,7 +500,7 @@ function pickerRefs(){
 }
 function picker(type,opener=document.activeElement){
  const initialKey=opener?.dataset.pkKey;
- pkLastId=A.ITEMS[initialKey]?.id||'';$('#pkQ').value='';
+ pkLastId=A.ITEMS[initialKey]?.id||'';$('#pkQ').value='';pkFav=false;pkCat='';
  openDialog($('#pk'),$('#pkQ'),opener);
  showPickerType(type,null,initialKey);
 }
@@ -331,8 +519,35 @@ function pickerAnchor(){
  }
  return {visible,scroll:grid.scrollTop};
 }
+function drawPkFilters(){
+ const bar=$('#pkBar'),favBtn=$('#pkFavOnly'),catsEl=$('#pkCats');
+ if(!bar||!pkItems)return;
+ const visible=pkItems.filter(A.ok);
+ const favCount=visible.filter(it=>A.st.fav.has(it.k)).length;
+ if(!favCount)pkFav=false;
+ favBtn.hidden=!favCount;
+ favBtn.classList.toggle('on',pkFav);
+ favBtn.setAttribute('aria-pressed',String(pkFav));
+ const counts=new Map();
+ for(const it of visible){
+  if(pkFav&&!A.st.fav.has(it.k))continue;
+  const cat=pkItemCat(it);
+  if(cat)counts.set(cat,(counts.get(cat)||0)+1);
+ }
+ if(pkCat&&!counts.has(pkCat))pkCat='';
+ const entries=[...counts.entries()].sort((a,b)=>b[1]-a[1]);
+ if(entries.length>=2){
+  catsEl.innerHTML=`<button type="button" class="chip ${!pkCat?'on':''}" data-pk-cat="" aria-pressed="${!pkCat}">全部</button>`+
+   entries.map(([cat,n])=>`<button type="button" class="chip ${pkCat===cat?'on':''}" data-pk-cat="${esc(cat)}" aria-pressed="${pkCat===cat}">${esc(cat)}<i>${n}</i></button>`).join('');
+  catsEl.hidden=false;
+ }else{
+  catsEl.innerHTML='';catsEl.hidden=true;
+ }
+ bar.hidden=favBtn.hidden&&catsEl.hidden;
+}
 async function showPickerType(type,anchor,initialKey){
- clearTimeout(pkTimer);pkType=type;pkItems=null;
+ clearTimeout(pkTimer);const prevPose=poseType(pkType)&&poseType(type);pkType=type;pkItems=null;
+ if(!prevPose){pkFav=false;pkCat=''}
  const poses=poseType(type);
  $('#pkPoseTypes').hidden=!poses;
  for(const tab of $$('#pkPoseTypes button')){
@@ -351,6 +566,7 @@ async function showPickerType(type,anchor,initialKey){
    tab.classList.toggle('on',active);tab.setAttribute('aria-pressed',String(active));
   }
  }
+ if($('#pkBar'))$('#pkBar').hidden=true;
  $('#pkDone').hidden=false;
  $('#pkT').textContent=poses?pickerPoseTitle():group===otherTypes?'其他素材':group===garmentTypes?'选择服装':'选择人物';
  const grid=$('#pkG');
@@ -364,6 +580,7 @@ async function showPickerType(type,anchor,initialKey){
    const rank=it=>A.counterpartType(it)?(A.ITEMS['p:'+it.id]?.ord??end):end;
    pkItems=[...items].sort((a,b)=>rank(a)-rank(b));
   }
+  drawPkFilters();
   drawPk(initialKey);
   if(initialKey)grid.querySelector(`[data-k="${CSS.escape(initialKey)}"]`)?.scrollIntoView({block:'nearest'});
   if(anchor){
@@ -398,6 +615,8 @@ function drawPk(initialKey){
  const words=$('#pkQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
  pkMatches=pkItems.filter(it=>{
   if(!A.ok(it))return false;
+  if(pkFav&&!A.st.fav.has(it.k))return false;
+  if(pkCat&&pkItemCat(it)!==pkCat)return false;
   if(!words.length)return true;
   const text=[it.id,it.no,it.ti,it.zh,it.en,it.ja,it.line,it.lineEn,it.lineJa,it.cat,it.catEn,it.catJa,it.kw,it.sec,it.len,it.st,...(it.angles||[]).flatMap(a=>[a.zh,a.en,a.ja])].join(' ').toLowerCase();
   return words.every(word=>text.includes(word));
@@ -442,6 +661,10 @@ function pkClose(){
 $('#pkX').onclick=pkClose;$('#pkDone').onclick=pkClose;
 $('#pk').onclick=e=>{
  if(e.target.id==='pk')return pkClose();
+ const favBtn=e.target.closest('#pkFavOnly');
+ if(favBtn){pkFav=!pkFav;drawPkFilters();drawPk();return}
+ const catBtn=e.target.closest('[data-pk-cat]');
+ if(catBtn){pkCat=catBtn.dataset.pkCat;drawPkFilters();drawPk();return}
  const tab=e.target.closest('[data-pk-type]');
  if(tab){
   if(tab.dataset.pkType!==pkType)showPickerType(tab.dataset.pkType,pickerAnchor());
@@ -735,9 +958,9 @@ $('#wbStage').addEventListener('click',e=>{const f=e.target.closest('[data-ef]')
 $('#wbGo').onclick=()=>run();$('#wbAgain').onclick=()=>run();$('#wbStop').onclick=()=>W.busy&&W.busy.abort();
 // ---------- 结果 ----------
 const ru=new Map();const U=b=>{if(!ru.has(b))ru.set(b,URL.createObjectURL(b));return ru.get(b)};
-function show(i,meta){const r=W.results[i];if(!r)return;{let d=$('#wbSentD');if(!d){d=document.createElement('details');d.id='wbSentD';d.className='raw sent';$('#wbOutAct').after(d)}d.hidden=!r.prompt;d.innerHTML=r.prompt?`<summary>查看原始信息${r.neutral?' · 已减少误拦截':''}</summary><pre>${esc((r.orig?'原提示词：\n'+r.orig+'\n\n实际发送：\n':'实际发送：\n')+r.prompt)}</pre>`:''}W.ri=i;const a=U(r.after),hasB=!!r.before;$('#wbAfter').src=a;if(hasB)$('#wbBefore').src=U(r.before);$('#wbCmp').hidden=false;$('#wbCmp').classList.toggle('solo',!hasB||!W.cmp);$('#wbCmpT').hidden=!hasB;$('#wbCmpT').textContent=W.cmp?'关闭对比':'前后对比';
- $('#wbPh0').hidden=true;$('#wbCanvasTitle').textContent='生成结果';$('#wbCanvasRatio').textContent='';$('#wbErr').hidden=true;$('#wbOutAct').hidden=false;setX(50);$('#wbZip').hidden=W.results.length<2;if(!matchMedia('(prefers-reduced-motion: reduce)').matches){$('#wbAfter').animate([{opacity:0,transform:'scale(1.03)',filter:'blur(8px)'},{opacity:1,transform:'none',filter:'none'}],{duration:620,easing:'cubic-bezier(.16,1,.3,1)'});if(hasB&&W.cmp&&!W._wig){W._wig=1;const t0=performance.now();const f=t=>{const p=(t-t0)/1400;if(p>=1)return setX(50);setX(50+Math.sin(p*Math.PI*2)*12*(1-p));requestAnimationFrame(f)};setTimeout(()=>requestAnimationFrame(f),500)}}$('#wbMeta').textContent=meta||((PROV[r.prov]||{name:r.prov}).name+' · '+r.model+(r.label?' · '+r.label:''));
- const R=$('#wbRes');R.hidden=W.results.length<2;R.innerHTML=W.results.map((x,j)=>`<button data-ri="${j}" class="${j==i?'on':''}"><img src="${U(x.after)}" alt="结果 ${j+1}"></button>`).join('');const rct=$('#wbStage').getBoundingClientRect();if(rct.bottom<0||rct.top>innerHeight)$('#wbStage').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest'})}
+function show(i,meta){const r=W.results[i];if(!r)return;W.view='result';{let d=$('#wbSentD');if(!d){d=document.createElement('details');d.id='wbSentD';d.className='raw sent';$('#wbOutAct').after(d)}d.hidden=!r.prompt;d.innerHTML=r.prompt?`<summary>查看原始信息${r.neutral?' · 已减少误拦截':''}</summary><pre>${esc((r.orig?'原提示词：\n'+r.orig+'\n\n实际发送：\n':'实际发送：\n')+r.prompt)}</pre>`:''}W.ri=i;const a=U(r.after),hasB=!!r.before;$('#wbAfter').src=a;if(hasB)$('#wbBefore').src=U(r.before);$('#wbCmp').classList.toggle('solo',!hasB||!W.cmp);$('#wbCmpT').hidden=!hasB;$('#wbCmpT').textContent=W.cmp?'关闭对比':'前后对比';
+ syncCanvasView();$('#wbCanvasTitle').textContent='生成结果';$('#wbCanvasRatio').textContent='';$('#wbErr').hidden=true;setX(50);$('#wbZip').hidden=W.results.length<2;if(!matchMedia('(prefers-reduced-motion: reduce)').matches){$('#wbAfter').animate([{opacity:0,transform:'scale(1.03)',filter:'blur(8px)'},{opacity:1,transform:'none',filter:'none'}],{duration:620,easing:'cubic-bezier(.16,1,.3,1)'});if(hasB&&W.cmp&&!W._wig){W._wig=1;const t0=performance.now();const f=t=>{const p=(t-t0)/1400;if(p>=1)return setX(50);setX(50+Math.sin(p*Math.PI*2)*12*(1-p));requestAnimationFrame(f)};setTimeout(()=>requestAnimationFrame(f),500)}}$('#wbMeta').textContent=meta||((PROV[r.prov]||{name:r.prov}).name+' · '+r.model+(r.label?' · '+r.label:''));
+ const R=$('#wbRes');R.innerHTML=W.results.map((x,j)=>`<button data-ri="${j}" class="${j==i?'on':''}"><img src="${U(x.after)}" alt="结果 ${j+1}"></button>`).join('');const rct=$('#wbStage').getBoundingClientRect();if(rct.bottom<0||rct.top>innerHeight)$('#wbStage').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'nearest'})}
 $('#wbRes').onclick=e=>{const b=e.target.closest('[data-ri]');b&&show(+b.dataset.ri)};$('#wbCmpT').onclick=()=>{W.cmp=!W.cmp;show(W.ri)};
 $('#wbZip').onclick=async()=>{if(!window.makeZip)return;const ts=stamp(new Date());const fs=W.results.map((r,i)=>({name:`posewear-${r.mode=='gen'?'gen':'tryon'}-${ts}-${String(i+1).padStart(2,'0')}.png`,blob:r.after}));window.X.dl(await makeZip(fs),`posewear-tryon-${ts}.zip`);toast(`已打包 ${fs.length} 张`)};
 $('#cfExp').onclick=()=>{const notice='导出时包含 API Key 吗？\n确定 = 包含，取消 = 不含密钥';const withKey=confirm(window.PWLocale.t(notice));const o=cfgRead();if(!withKey)delete o.key;window.X.dl(new Blob([JSON.stringify({app:'衣姿 PoseWear',type:'api-config',cfg:o},null,2)],{type:'application/json'}),'衣姿-API设置.json');msg('已导出设置'+(withKey?'（含密钥，请妥善保管）':'（不含密钥）'))};
@@ -877,12 +1100,13 @@ async function restoreRecord(r){
  SV('wbMode',W.mode);SV('wbPl',W.pl);SV('wbBm',W.bm);saveDraft();
  if(!inputs)problems.push('旧记录的服装和姿势需重选');
  if(cfg.prov!==r.prov||modelOf()!==r.model)problems.push('请核对当前服务商及模型');
+ W.view='board';
  render();
  return problems;
 }
 window.WB={copyStudioBrief,async show(){try{await init();render();if(!W.results.length)loadExample()}catch{toast('试穿台选材加载失败，请重新打开后再试')}},pick,restoreRecord,
  _W:W,_cfg:cfg,db:{tx,save,hist:()=>tx('readonly',s=>s.getAll()),del:t=>tx('readwrite',s=>s.delete(t)),clear:()=>tx('readwrite',s=>s.clear()),put:r=>tx('readwrite',s=>s.put(r)),refreshHist:hist},
- quick:o=>run({...o,quick:true}),cfgOpen,nice,busy:()=>!!W.busy,stop:()=>W.busy?.abort(),configured,provLabel,
+ quick:o=>run({...o,quick:true}),cfgOpen,exportBoardPng,nice,busy:()=>!!W.busy,stop:()=>W.busy?.abort(),configured,provLabel,
  setSel,addSelection,selectionPrompt:(sel,lang)=>compose(undefined,selectionState(sel,lang)),openPicker:(t,sink)=>{pkSink=sink;picker(t)}};
 if(document.body.classList.contains('studio'))WB.show();
 if(location.hash=='#studio'){const t0=()=>scrollTo(0,0);requestAnimationFrame(t0);addEventListener('load',()=>setTimeout(t0,0),{once:true})}
