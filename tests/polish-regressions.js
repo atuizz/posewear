@@ -105,7 +105,7 @@ async function run() {
     await page.locator('#sketchBtn').waitFor({ state: 'visible' });
     await page.locator('#sketchBtn').click();
     await page.locator('#sketch').waitFor({ state: 'visible' });
-    assert.equal(await page.locator('#skStep').textContent(), '1 / 10');
+    assert.equal(await page.locator('#skStep').textContent(), '1 / 2');
     await page.keyboard.press('Space');
     assert.equal(await page.locator('#skPause').textContent(), '继续');
     await page.keyboard.press('h');
@@ -113,17 +113,19 @@ async function run() {
     await page.keyboard.press('g');
     assert.equal(await page.locator('#skGrid').getAttribute('data-mode'), 'thirds');
     await page.keyboard.press('ArrowRight');
-    assert.equal(await page.locator('#skStep').textContent(), '2 / 10');
+    assert.equal(await page.locator('#skStep').textContent(), '2 / 2');
     await page.keyboard.press('ArrowRight'); // 2 poses in fixture -> completes session with recap sheet
     await page.locator('#skDone').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#skRecap button').count(), 2, 'Recap sheet should display all practiced references');
     await page.keyboard.press('Escape');
     assert.ok(await page.locator('#sketch').isHidden());
 
-    // Global Command Palette (Ctrl+K): fuzzy search & jump to library
+    // Global Command Palette (Ctrl+K): fuzzy search across ZH / EN / JA
     await page.keyboard.press('Control+k');
     await page.locator('#cmdPal').waitFor({ state: 'visible' });
     await page.fill('#cmdQ', '服装');
+    assert.ok(await page.locator('#cmdList .cmd-it').count() >= 1);
+    await page.fill('#cmdQ', 'クロッキー');
     assert.ok(await page.locator('#cmdList .cmd-it').count() >= 1);
     await page.keyboard.press('Escape');
     assert.ok(await page.locator('#cmdPal').isHidden());
