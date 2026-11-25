@@ -38,12 +38,19 @@ function publishedSnapshot() {
   snapshot ??= discover().catch(error => { snapshot = undefined; throw error; });
   return snapshot;
 }
+function streamOut(res, body) {
+  const s = Readable.fromWeb(body);
+  // 上游中途断开（如 content-length 不符）只丢弃本次响应，不能让预览进程退出
+  s.on('error', () => { if (!res.writableEnded) res.destroy(); });
+  res.on('error', () => {});
+  s.pipe(res);
+}
 async function remote(res, url, method, successStatus) {
   const r = await fetch(url, { method });
   const headers = {};
   for (const key of ['content-type','cache-control']) if (r.headers.has(key)) headers[key] = r.headers.get(key);
   res.writeHead(r.ok && successStatus ? successStatus : r.status, headers);
-  if (r.body) Readable.fromWeb(r.body).pipe(res); else res.end();
+  if (r.body) streamOut(res, r.body); else res.end();
   return r.status;
 }
 const server = http.createServer(async (req,res) => {
@@ -58,7 +65,7 @@ const server = http.createServer(async (req,res) => {
         ...(req.method==='POST'?{body:Readable.toWeb(req),duplex:'half'}:{})});
       const reply = await localRequest(engine,request);
       res.writeHead(reply.status,Object.fromEntries(reply.headers));
-      if(reply.body) Readable.fromWeb(reply.body).pipe(res); else res.end();
+      if(reply.body) streamOut(res, reply.body); else res.end();
       return;
     }
     if (u.pathname === '/api/proxy') {
@@ -66,7 +73,7 @@ const server = http.createServer(async (req,res) => {
         ...(req.method === 'POST' ? {body:Readable.toWeb(req),duplex:'half'} : {})});
       const response = await onRequest({request,env:process.env});
       res.writeHead(response.status,Object.fromEntries(response.headers));
-      if (response.body) Readable.fromWeb(response.body).pipe(res); else res.end();
+      if (response.body) streamOut(res, response.body); else res.end();
       return;
     }
     if (!['GET','HEAD'].includes(req.method)) return res.writeHead(405).end();
