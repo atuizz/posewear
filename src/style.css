@@ -741,8 +741,10 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .hist-card .hmode{pointer-events:none}
 html:lang(en) .ph.err::after{content:"Image unavailable · Retry"}
 html:lang(ja) .ph.err::after{content:"画像を読み込めません · 再試行"}
+html:lang(vi) .ph.err::after{content:Không tải được ảnh · Thử lại}
 html:lang(en) .st-r .hl:empty::before{content:"Generated images are saved here on this device."}
 html:lang(ja) .st-r .hl:empty::before{content:"生成した画像はこの端末に保存されます。"}
+html:lang(vi) .st-r .hl:empty::before{content:Ảnh đã tạo được lưu tại đây trên thiết bị này.}
 @media(min-width:640px) and (max-width:1024px) and (max-height:530px) and (orientation:landscape){
  body.studio{overflow:auto}
  #studio{height:auto;padding:6px 12px calc(85px + env(safe-area-inset-bottom))}
@@ -886,7 +888,7 @@ html:lang(ja) .st-r .hl:empty::before{content:"生成した画像はこの端末
 .studio-head h1:focus{outline:none}
 .studio-head .modes{width:auto;max-width:55%;background:var(--sf);border-radius:12px}
 .studio-head .modes button{flex:auto;border-radius:9px;padding:8px 14px;white-space:nowrap}
-@media(max-width:420px){html:lang(en) .studio-head .modes button,html:lang(ja) .studio-head .modes button{white-space:normal}}
+@media(max-width:420px){html:lang(en) .studio-head .modes button,html:lang(ja) .studio-head .modes button,html:lang(vi) .studio-head .modes button{white-space:normal}}
 .st-app{width:100%;flex:1;min-height:0;height:auto;gap:clamp(12px,1.4vw,24px);grid-template-columns:minmax(250px,.91fr) minmax(0,1.82fr) clamp(230px,20vw,340px)}
 .st-l,.st-r{gap:12px}
 .st-l .step,.st-r .quick,.st-r .adv,.st-r .hist,.st-r .cfg,.st-c,.st-r .gobar{box-shadow:none;border:1px solid var(--line2)}
