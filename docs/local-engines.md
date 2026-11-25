@@ -41,4 +41,15 @@ POSEWEAR_LOCAL_ENGINE=sd-cpp npm start
 
 工作台通过 `/v1/models` 检查连接，有参考图时把每张图作为一个 `image[]` 字段交给 `/v1/images/edits`，纯提示词则使用 `/v1/images/generations`。模型和构建版本决定可以使用的参考图数量与出图效果。[sd-server 接口文档](https://github.com/leejet/stable-diffusion.cpp/blob/master/examples/server/api.md)
 
+### 核显参考耗时（社区实测）
+
+在 AMD 780M 核显 + Vulkan 后端上的参考表现（来自议题 #23 实测）：
+
+| 模型 | 分辨率 | 纯文生图 | 带 1 张参考图 |
+| --- | --- | --- | --- |
+| SD 1.5 | `512×768` | ~20 秒 | ~1 分钟 |
+| Flux-2-Klein-4B-Q4_K_S | `1024×1024` | ~1 分钟 | ~2 分钟以上 |
+
+在显存或内存带宽受限的本机设备上，建议优先使用**单张参考图**（尤其是深度姿势图配合提示词），比同时送入多张参考图更稳、更快。
+
 两个引擎都可以通过 `POSEWEAR_LOCAL_URL` 指定其他回环端口。工作台通过本机预览进程把提示词和选中图片送给本机服务。首次载入公开图库仍需联网。[GitHub 议题 #23](https://github.com/atuizz/posewear/issues/23)
