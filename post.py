@@ -1,144 +1,248 @@
-# v10 构建后处理：哈希资源、静态详情页、SEO 文件、_headers（由 build.py exec）
-SITE=os.environ.get('POSEWEAR_SITE','https://posewear.pages.dev').rstrip('/')  # 部署到自己的域名时改这里
-AH=os.environ.get('POSEWEAR_ASSET_HOST','').rstrip('/')  # 分离部署时缩略图/原图所在站（见 build.py 的 AHOST）
-WAT=os.environ.get('POSEWEAR_WA_TOKEN','').strip()  # Cloudflare Web Analytics 站点令牌（公开值，随页面下发）；设了才注入统计脚本并放行其 CSP 域名
-def TU(p): return p if p.startswith('http') else (AH+'/'+p if AH else '/'+p)  # 缩略图相对引用
-def TS(p): return p if p.startswith('http') else (AH+'/'+p if AH else SITE+'/'+p)  # 缩略图绝对引用（JSON-LD）
-h8=lambda b:hashlib.sha256(b if isinstance(b,bytes) else b.encode()).hexdigest()[:10]
-os.makedirs(f'{D}/assets',exist_ok=True)
-for f in os.listdir(f'{D}/assets'): os.remove(f'{D}/assets/{f}')
-A={}
-def put(name,data):
-  b=data.encode() if isinstance(data,str) else data
-  base,ext=name.rsplit('.',1);n=f'assets/{base}.{h8(b)}.{ext}';open(f'{D}/{n}','wb').write(b);A[name]=n;return n
-put('poses.json',PJ);put('costumes.json',CJ);put('anime.json',AJ);put('portraits.json',RJ);put('depths.json',DJ)
-put('expressions.json',EXJ);put('hair.json',HAJ);put('dynasties.json',DYJ);put('scenes.json',SCJ);put('lights.json',LIJ);put('props.json',PRJ);put('furniture.json',FUJ)
-CLIENT_FILES = ['theme.js','style.css','app.js','zip.js','extras.js','image-providers.js','studio.js','history.js','i18n.js','references.js']
-for f in CLIENT_FILES:
-  if f != 'app.js': put(f,open(f'src/{f}','rb').read())
-app=open('src/app.js').read()
-if AH: app=app.replace("const AH='';","const AH="+repr(AH+'/')+";")
-for name, asset in A.items():
-  if name.endswith('.json'): app=app.replace(repr(name),repr('/'+asset))
-put('app.js',app)
-idx=open('src/index.html').read()
-for f in CLIENT_FILES:
-  idx=idx.replace(f'"{f}"',f'"/{A[f]}"')
-idx=idx.replace('href="poses.json"',f'href="/{A["poses.json"]}"')
-if WAT: idx=idx.replace('</body>',f'<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{{"token": "{WAT}"}}\'></script></body>')
-open(f'{D}/index.html','w').write(idx)
-for f in CLIENT_FILES:
-  if os.path.exists(f'{D}/{f}'): os.remove(f'{D}/{f}')
-sw=open('src/sw.js').read()
-version = 'posewear-' + h8(sw + idx + ''.join(A.values()))
-sw=sw.replace("'posewear-development'",repr(version))
-precache = ['/','/favicon.svg']+['/'+A[f] for f in CLIENT_FILES+['poses.json','depths.json']]
-sw=re.sub(r'const PRECACHE = .*?;', 'const PRECACHE = '+json.dumps(precache)+';', sw, count=1)
-open(f'{D}/sw.js','w').write(sw)
+"""Build post-processor: asset fingerprinting, index.html/sw.js assembly, 404, _headers/CSP, and SEO."""
+
 import base64
-inl=re.findall(r'<script>(.*?)</script>',idx,re.S)
-SH=' '.join("'sha256-"+base64.b64encode(hashlib.sha256(x.encode()).digest()).decode()+"'" for x in inl)
-# ---------- 静态详情页 ----------
-for d in ['pose','costume','anime','portrait']:
-  if os.path.exists(f'{D}/{d}'): shutil.rmtree(f'{D}/{d}')
-THEME_HEAD = f'<meta name="theme-color" content="#ffffff"><script src="/{A["theme.js"]}"></script>'
+import hashlib
+import json
+import os
+import re
+import shutil
+
+import seo
+
+
+CLIENT_FILES = [
+    'theme.js',
+    'style.css',
+    'i18n.js',
+    'catalog.js',
+    'references.js',
+    'palette.js',
+    'app.js',
+    'sketch.js',
+    'command-palette.js',
+    'zip.js',
+    'extras.js',
+    'image-providers.js',
+    'board-export.js',
+    'studio.js',
+    'history.js',
+]
+
+CATALOG_FILES = (
+    'poses.json',
+    'costumes.json',
+    'anime.json',
+    'portraits.json',
+    'depths.json',
+    'expressions.json',
+    'hair.json',
+    'dynasties.json',
+    'scenes.json',
+    'lights.json',
+    'props.json',
+    'furniture.json',
+)
+
 DARK_TOKENS = 'color-scheme:dark;--paper:#111;--ink:#eee;--muted:#aaa;--surface:#1d1d1d;--surface-hover:#292929;--edge:#333'
-CSS = (':root{color-scheme:light;--paper:#fff;--ink:#111;--muted:#606060;--surface:#f5f5f5;--surface-hover:#ececec;--edge:#ededed}'
-       ':root[data-theme="dark"]{' + DARK_TOKENS + '}'
-       '@media(prefers-color-scheme:dark){:root:not([data-theme]){' + DARK_TOKENS + '}}') + '''body{margin:0;font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper)}a{color:inherit}
-header{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--edge)}header a{text-decoration:none;font-weight:700;display:flex;align-items:center;gap:8px}
-.mk{width:26px;height:26px;color:#ff2442;display:grid;place-items:center}.mk svg{width:26px;height:26px}
-main{max-width:1040px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}
-@media(max-width:760px){main{grid-template-columns:1fr}}
-.im img{width:100%;height:auto;border-radius:16px;background:var(--surface);display:block}
-h1{font-size:24px;margin:0 0 6px}.mu{color:var(--muted);font-size:13px}.bc{font-size:13px;color:var(--muted);margin-bottom:12px}
-.box{background:var(--surface);border-radius:14px;padding:14px 16px;margin:14px 0}.box small{color:var(--muted)}
-.go{display:inline-block;background:#d81b3a;color:white;border-radius:999px;padding:10px 22px;text-decoration:none;font-weight:600;margin:6px 8px 6px 0}
-.rel{grid-column:1/-1}.rel ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}.rel img{width:100%;height:auto;border-radius:10px;background:var(--surface);display:block}.rel a{text-decoration:none;font-size:13px}
-footer{text-align:center;color:var(--muted);font-size:12px;padding:30px 20px;border-top:1px solid var(--edge)}
-h1{overflow-wrap:anywhere}
-.go.secondary{background:var(--ink);color:var(--paper)}'''
-LOGO='<span class="mk"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="6.6" r="4" fill="currentColor"/><path d="M16 13.4 3.4 25.6h25.2z" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/></svg></span>'
-E=lambda s:H.escape(str(s),quote=True)
-def page(kind,it,rel):
-  P=kind=='pose'
-  if kind=='portrait':
-    ttl=f"{it['ti']} · 人像脸模参考";img=it['m'];w,h=1080,round(1080*it['h']/it['w']);th=it['t']
-    desc=f"{it['sec']} · {it['len']}{'，'+it['st'] if it['st'] else ''}。AI 生成的虚构人物，可作 AI 绘图/视频的人物面部参考，CC0。";meta=f"{it['sec']} · {it['len']} · 编号 {it['no']}";en=it['en']
-  elif P:
-    ttl=f"{it['zh']} · {it['cat']}姿势参考";img=it['angles'][0]['i'];w,h=900,1200;th=it['angles'][0]['t']
-    desc=f"{it['zh']}。{it['line']} · {it['cat']}，共 {len(it['angles'])} 个拍摄角度（{'、'.join(a['zh'] for a in it['angles'])}）。附中英文提示词，可直接用于绘图或出图。"
-    meta=f"{it['line']} · {it['cat']} · 编号 {it['no']}";en=f"{it['en']}, {it['lineEn']}"
-  else:
-    ttl=f"{it['ti']} · {it['cat']}穿搭参考";img=it['m'];w,h=1080,1620;th=it['t']
-    desc=it['zh'];meta=f"{it['cat']} · 编号 {it['id']}";en=it['en']
-  url=f"{SITE}/{kind}/{it['id']}/"
-  ld={"@context":"https://schema.org","@type":"ImageObject","name":ttl,"description":desc,"contentUrl":f"{SITE}/{img}","thumbnailUrl":f"{TS(th)}","url":url,"width":w,"height":h,"isPartOf":{"@type":"WebSite","name":"衣姿 PoseWear","url":SITE+'/'},"creditText":"AI Pose Gallery / AI Costume Gallery (@giaaibusi)"}
-  rl=''.join(f'<li><a href="/{kind}/{r["id"]}/"><img src="{TU(r["angles"][0]["t"] if P else r["t"])}" alt="{E(r["zh"] if P else r["ti"])}" width="{300 if P else 360 if kind=="costume" else 400}" height="{400 if P else 540 if kind=="costume" else 500}" loading="lazy">{E(r["zh"] if P else r["ti"])}</a></li>' for r in rel)
-  lab={'pose':'姿势库','costume':'服装库','portrait':'人像库'}[kind]
-  return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{E(ttl)} | 衣姿 PoseWear</title><meta name="description" content="{E(desc[:150])}"><link rel="canonical" href="{url}">
-<meta property="og:type" content="article"><meta property="og:title" content="{E(ttl)}"><meta property="og:description" content="{E(desc[:150])}"><meta property="og:image" content="{SITE}/{img}"><meta property="og:url" content="{url}"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">{THEME_HEAD}<style>{CSS}</style>
-<script type="application/ld+json">{json.dumps(ld,ensure_ascii=False)}</script></head><body>
-<header><a href="/">{LOGO}衣姿 PoseWear</a></header>
-<main><div class="im"><img src="/{img}" alt="{E(ttl)}" width="{w}" height="{h}"></div>
-<div><div class="bc"><a href="/">首页</a> › <a href="/#{kind}">{lab}</a> › {E(it.get('cat') or it.get('len'))}</div><h1>{E(it['zh'] if P else it['ti'])}</h1><div class="mu">{E(meta)}</div>
-<div class="box"><small>中文描述</small><p>{E(desc)}</p></div><div class="box"><small>英文提示词 · PROMPT</small><p>{E(en)}</p></div>
-<a class="go" href="/#{kind}/{it['id']}">在衣姿中打开</a><a class="go secondary" href="/#studio">去试穿</a></div>
-<section class="rel"><h2>同类{'姿势' if P else '穿搭' if kind=='costume' else '人像'}</h2><ul>{rl}</ul></section></main>
-<footer>{'图片来自 AI Portrait Gallery（作者 @agi_aibusi，CC0 1.0），AI 生成的虚构人物。' if kind=='portrait' else '图片来自 AI Pose Gallery / AI Costume Gallery（原作者 @giaaibusi）'}，中文描述由本站整理。<a href="/">返回首页</a></footer></body></html>'''
-open(f'{D}/404.html','w').write(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>页面不存在 | 衣姿 PoseWear</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml">{THEME_HEAD}<style>{CSS}
-.nf{{max-width:480px;margin:12vh auto;text-align:center;padding:0 20px}}.nf b{{font-size:64px;color:#d81b3a;display:block;line-height:1}}</style></head><body><header><a href="/">{LOGO}衣姿 PoseWear</a></header>
-<div class="nf"><b>404</b><h1>这个页面不存在</h1><p class="mu">链接可能写错了，或者内容已经调整。</p><a class="go" href="/">回到首页</a><a class="go secondary" href="/#costume">看看服装库</a></div></body></html>''')
-_IMG=" ".join(["'self'","data:","blob:"]+list(DEPTH_ORIGINS)+list(HOTLINK_ORIGINS)+([AH] if AH else []))
-CSP=("default-src 'self'; script-src 'self' "+SH+(" https://static.cloudflareinsights.com" if WAT else "")+"; style-src 'self' 'unsafe-inline'; img-src "+_IMG+"; font-src 'self' data:; "
- "connect-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*; "
- # 本机回环 http：自定义服务商直连本机网关（如本地 ComfyUI/OpenAI 兼容网关）时，
- # 浏览器直接 fetch http://127.0.0.1:端口；此前 connect-src 只有 https: 会拦掉。
- # upgrade-insecure-requests 不升级回环地址（已是潜在可信源），故只需放行本机 http。
- "worker-src 'self'; manifest-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests")
-IMM='  Cache-Control: public, max-age=31536000, immutable\n'
-# Pages Functions 必须位于部署目录内才会随 wrangler pages deploy 一起发布（曾因只传静态产物导致 /api/proxy 丢失，见 issue #7）
-if os.path.isdir('functions'):
-  shutil.rmtree(f'{D}/functions',ignore_errors=True); shutil.copytree('functions',f'{D}/functions')
-open(f'{D}/_headers','w').write(f'''/*
-  Content-Security-Policy: {CSP}
-  X-Content-Type-Options: nosniff
-  Referrer-Policy: strict-origin-when-cross-origin
-  X-Frame-Options: DENY
-  Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
-  Cross-Origin-Opener-Policy: same-origin
-/assets/*
-{IMM}/p/*
-{IMM}/c/*
-{IMM}/a/*
-{IMM}/r/*
-{IMM}/e/*
-{IMM}/y/*
-{IMM}/s/*
-{IMM}/l/*
-{IMM}/t/*
-{IMM}/f/*
-{IMM}/o/*
-{IMM}/icon-*
-  Cache-Control: public, max-age=86400
-/og.png
-  Cache-Control: public, max-age=86400
-/sw.js
-  Cache-Control: no-cache
-/
-  Cache-Control: public, max-age=0, must-revalidate
-/index.html
-  Cache-Control: public, max-age=0, must-revalidate
-/pose/*
-  Cache-Control: public, max-age=600
-/costume/*
-  Cache-Control: public, max-age=600
-/anime/*
-  Cache-Control: public, max-age=600
-/portrait/*
-  Cache-Control: public, max-age=600
-''')
-exec(open('seo.py').read())
+
+BASE_CSS = (
+    ':root{color-scheme:light;--paper:#fff;--ink:#111;--muted:#606060;--surface:#f5f5f5;--surface-hover:#ececec;--edge:#ededed}'
+    ':root[data-theme="dark"]{' + DARK_TOKENS + '}'
+    '@media(prefers-color-scheme:dark){:root:not([data-theme]){' + DARK_TOKENS + '}}'
+    'body{margin:0;font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper)}a{color:inherit}\n'
+    'header{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--edge)}header a{text-decoration:none;font-weight:700;display:flex;align-items:center;gap:8px}\n'
+    '.mk{width:26px;height:26px;color:#ff2442;display:grid;place-items:center}.mk svg{width:26px;height:26px}\n'
+    'main{max-width:1040px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px}\n'
+    '@media(max-width:760px){main{grid-template-columns:1fr}}\n'
+    '.im img{width:100%;height:auto;border-radius:16px;background:var(--surface);display:block}\n'
+    'h1{font-size:24px;margin:0 0 6px}.mu{color:var(--muted);font-size:13px}.bc{font-size:13px;color:var(--muted);margin-bottom:12px}\n'
+    '.box{background:var(--surface);border-radius:14px;padding:14px 16px;margin:14px 0}.box small{color:var(--muted)}\n'
+    '.go{display:inline-block;background:#d81b3a;color:white;border-radius:999px;padding:10px 22px;text-decoration:none;font-weight:600;margin:6px 8px 6px 0}\n'
+    '.rel{grid-column:1/-1}.rel ul{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px}.rel img{width:100%;height:auto;border-radius:10px;background:var(--surface);display:block}.rel a{text-decoration:none;font-size:13px}\n'
+    'footer{text-align:center;color:var(--muted);font-size:12px;padding:30px 20px;border-top:1px solid var(--edge)}\n'
+    'h1{overflow-wrap:anywhere}\n'
+    '.go.secondary{background:var(--ink);color:var(--paper)}'
+)
+
+LOGO = (
+    '<span class="mk"><svg viewBox="0 0 32 32" aria-hidden="true">'
+    '<circle cx="16" cy="6.6" r="4" fill="currentColor"/>'
+    '<path d="M16 13.4 3.4 25.6h25.2z" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/>'
+    '</svg></span>'
+)
+
+IMMUTABLE_PATHS = ('/assets/*', '/p/*', '/c/*', '/a/*', '/r/*', '/e/*', '/y/*', '/s/*', '/l/*', '/t/*', '/f/*', '/o/*')
+
+
+def _hash10(data):
+    raw = data if isinstance(data, bytes) else data.encode()
+    return hashlib.sha256(raw).hexdigest()[:10]
+
+
+def _build_csp(inline_hashes, img_origins, wa_token):
+    script_src = "'self' " + inline_hashes + (' https://static.cloudflareinsights.com' if wa_token else '')
+    img_src = ' '.join(img_origins)
+    # Local loopback http is allowed so custom/local engines (e.g. ComfyUI, sd.cpp, OpenAI-compatible
+    # gateways on 127.0.0.1/localhost) can be fetched directly from the browser without CSP blocking.
+    return (
+        f"default-src 'self'; script-src {script_src}; style-src 'self' 'unsafe-inline'; "
+        f"img-src {img_src}; font-src 'self' data:; "
+        "connect-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*; "
+        "worker-src 'self'; manifest-src 'self'; media-src 'self' blob:; "
+        "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; "
+        "upgrade-insecure-requests"
+    )
+
+
+def run(ctx):
+    """Fingerprint assets, rewrite index.html & sw.js, emit 404/_headers/functions, then run seo.run."""
+    dist_dir = ctx['dist_dir']
+    src_dir = ctx.get('src_dir', 'src')
+    functions_dir = ctx.get('functions_dir', 'functions')
+    site = ctx.get('site', os.environ.get('POSEWEAR_SITE', 'https://posewear.pages.dev')).rstrip('/')
+    asset_host = ctx.get('asset_host', os.environ.get('POSEWEAR_ASSET_HOST', '')).rstrip('/')
+    wa_token = ctx.get('wa_token', os.environ.get('POSEWEAR_WA_TOKEN', '')).strip()
+    catalogs = ctx['catalogs']
+    depth_origins = list(ctx.get('depth_origins', ()))
+    hotlink_origins = list(ctx.get('hotlink_origins', ()))
+
+    assets_dir = os.path.join(dist_dir, 'assets')
+    os.makedirs(assets_dir, exist_ok=True)
+    for name in os.listdir(assets_dir):
+        os.remove(os.path.join(assets_dir, name))
+
+    assets = {}
+
+    def put(name, data):
+        blob = data.encode() if isinstance(data, str) else data
+        base, ext = name.rsplit('.', 1)
+        rel = f'assets/{base}.{_hash10(blob)}.{ext}'
+        with open(os.path.join(dist_dir, rel), 'wb') as fh:
+            fh.write(blob)
+        assets[name] = rel
+        return rel
+
+    # 1. Write all 12 fingerprinted catalog JSON manifests
+    for filename in CATALOG_FILES:
+        payload = catalogs[filename]
+        if not isinstance(payload, (str, bytes)):
+            payload = json.dumps(payload, ensure_ascii=False, separators=(',', ':'))
+        put(filename, payload)
+
+    # 2. Fingerprint client scripts & styles (inject asset host & manifest hashes into app.js)
+    for filename in CLIENT_FILES:
+        if filename != 'app.js':
+            with open(os.path.join(src_dir, filename), 'rb') as fh:
+                put(filename, fh.read())
+
+    with open(os.path.join(src_dir, 'app.js')) as fh:
+        app_js = fh.read()
+    if asset_host:
+        app_js = app_js.replace("const AH='';", f"const AH={repr(asset_host + '/')};")
+    for name, rel in assets.items():
+        if name.endswith('.json'):
+            app_js = app_js.replace(repr(name), repr('/' + rel))
+    put('app.js', app_js)
+
+    # 3. Assemble index.html with hashed assets and remove unhashed duplicates from dist/
+    with open(os.path.join(src_dir, 'index.html')) as fh:
+        idx = fh.read()
+    for filename in CLIENT_FILES:
+        idx = idx.replace(f'"{filename}"', f'"/{assets[filename]}"')
+    idx = idx.replace('href="poses.json"', f'href="/{assets["poses.json"]}"')
+    if wa_token:
+        idx = idx.replace(
+            '</body>',
+            f'<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{{"token": "{wa_token}"}}\'></script></body>',
+        )
+    with open(os.path.join(dist_dir, 'index.html'), 'w') as fh:
+        fh.write(idx)
+
+    for filename in CLIENT_FILES:
+        unhashed = os.path.join(dist_dir, filename)
+        if os.path.exists(unhashed):
+            os.remove(unhashed)
+
+    # 4. Assemble Service Worker with version hash and fingerprinted precache list
+    with open(os.path.join(src_dir, 'sw.js')) as fh:
+        sw = fh.read()
+    version = 'posewear-' + _hash10(sw + idx + ''.join(assets.values()))
+    sw = sw.replace("'posewear-development'", repr(version))
+    precache = ['/', '/favicon.svg'] + ['/' + assets[f] for f in CLIENT_FILES + ['poses.json', 'depths.json']]
+    sw = re.sub(r'const PRECACHE = .*?;', 'const PRECACHE = ' + json.dumps(precache) + ';', sw, count=1)
+    with open(os.path.join(dist_dir, 'sw.js'), 'w') as fh:
+        fh.write(sw)
+
+    # 5. Compute inline script SHA-256 CSP hashes, clean old static dirs, write 404.html
+    inline_scripts = re.findall(r'<script>(.*?)</script>', idx, re.S)
+    inline_hashes = ' '.join(
+        "'sha256-" + base64.b64encode(hashlib.sha256(script.encode()).digest()).decode() + "'"
+        for script in inline_scripts
+    )
+
+    for sub in ('pose', 'costume', 'anime', 'portrait'):
+        target = os.path.join(dist_dir, sub)
+        if os.path.exists(target):
+            shutil.rmtree(target)
+
+    theme_head = f'<meta name="theme-color" content="#ffffff"><script src="/{assets["theme.js"]}"></script>'
+    not_found_html = (
+        '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>页面不存在 | 衣姿 PoseWear</title><meta name="robots" content="noindex">'
+        f'<link rel="icon" href="/favicon.svg" type="image/svg+xml">{theme_head}<style>{BASE_CSS}\n'
+        '.nf{max-width:480px;margin:12vh auto;text-align:center;padding:0 20px}'
+        '.nf b{font-size:64px;color:#d81b3a;display:block;line-height:1}</style></head><body>'
+        f'<header><a href="/">{LOGO}衣姿 PoseWear</a></header>'
+        '<div class="nf"><b>404</b><h1>这个页面不存在</h1>'
+        '<p class="mu">链接可能写错了，或者内容已经调整。</p>'
+        '<a class="go" href="/">回到首页</a><a class="go secondary" href="/#costume">看看服装库</a></div></body></html>'
+    )
+    with open(os.path.join(dist_dir, '404.html'), 'w') as fh:
+        fh.write(not_found_html)
+
+    # 6. Copy Pages Functions into dist/ so wrangler pages deploy includes /api/proxy (issue #7)
+    if functions_dir and os.path.isdir(functions_dir):
+        dest_fn = os.path.join(dist_dir, 'functions')
+        shutil.rmtree(dest_fn, ignore_errors=True)
+        shutil.copytree(functions_dir, dest_fn)
+
+    # 7. Write _headers (security headers + CSP + cache lifetimes)
+    img_origins = ["'self'", 'data:', 'blob:'] + depth_origins + hotlink_origins + ([asset_host] if asset_host else [])
+    csp = _build_csp(inline_hashes, img_origins, wa_token)
+    imm_block = ''.join(f'{path}\n  Cache-Control: public, max-age=31536000, immutable\n' for path in IMMUTABLE_PATHS)
+    headers = (
+        f'/*\n'
+        f'  Content-Security-Policy: {csp}\n'
+        f'  X-Content-Type-Options: nosniff\n'
+        f'  Referrer-Policy: strict-origin-when-cross-origin\n'
+        f'  X-Frame-Options: DENY\n'
+        f'  Strict-Transport-Security: max-age=31536000; includeSubDomains\n'
+        f'  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()\n'
+        f'  Cross-Origin-Opener-Policy: same-origin\n'
+        f'{imm_block}'
+        '/icon-*\n  Cache-Control: public, max-age=86400\n'
+        '/og.png\n  Cache-Control: public, max-age=86400\n'
+        '/sw.js\n  Cache-Control: no-cache\n'
+        '/\n  Cache-Control: public, max-age=0, must-revalidate\n'
+        '/index.html\n  Cache-Control: public, max-age=0, must-revalidate\n'
+        '/pose/*\n  Cache-Control: public, max-age=600\n'
+        '/costume/*\n  Cache-Control: public, max-age=600\n'
+        '/anime/*\n  Cache-Control: public, max-age=600\n'
+        '/portrait/*\n  Cache-Control: public, max-age=600\n'
+    )
+    with open(os.path.join(dist_dir, '_headers'), 'w') as fh:
+        fh.write(headers)
+
+    # 8. Delegate static SEO pages, sitemaps, robots.txt and SSR home fragment to seo.run
+    seo_ctx = {
+        **ctx,
+        'site': site,
+        'asset_host': asset_host,
+        'assets': assets,
+        'theme_head': theme_head,
+        'base_css': BASE_CSS,
+        'logo': LOGO,
+    }
+    seo_summary = seo.run(seo_ctx)
+    return {'assets': assets, 'csp': csp, 'seo': seo_summary}
