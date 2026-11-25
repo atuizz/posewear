@@ -6,6 +6,14 @@
 
 ## 简体中文
 
+### 2026-11-25 · v1.4.0
+
+- **画师级大图检视台**：新增 2× 缩放拖拽（`Z` / 双击）、水平镜像（`H`）、三分与中心红轴构图参考线（`G`）、灰度明度检查（`B`）、彩色参考图中心加权 5 色自动取色板（点击复制 `#HEX`）及线稿 × 深度图同视角实时卷帘对比（`V`）。
+- **全屏速写定时练习（Gesture Studio）**：基于当前筛选结果进入无干扰定时练习，支持 `30s / 60s / 2m / 5m` 与 `5 / 10 / 20 / 无限` 张数、可选柔和提示音、切页防跳帧、镜像 / 参考线 / 灰度 / 线稿深度切换，以及结束后可点击回溯的练习回顾接触表。
+- **创作工作台与导航升级**：参考画板显示发送序号（`1/2/3`）与当前机位，支持「换一组」、一键清空并撤销及**一键导出高分参考拼图 PNG**；全局 `⌘K` / `Ctrl+K` 命令面板支持中英日越模糊检索并直达 12 个图库与常用命令；服装/动画服装新增色卡筛选，生成记录页新增模式筛选、关键词搜索与所用参考图溯源。
+- **新增越南语（Tiếng Việt）界面与文档**（感谢 [@dung997tb](https://github.com/dung997tb) 贡献 #24）：完整覆盖全部 774 条界面词条、动态格式化文本、CSS 状态文案、移动端 320px/390px 回归测试与 [README.vi.md](README.vi.md)。
+- **代码架构重构与文档翻新**：新增 `src/catalog.js` 单一数据源，拆出 `palette.js`、`sketch.js`、`command-palette.js`、`board-export.js` 独立模块并完整解包格式化源码；扁平化去重 `src/style.css`（减少 344 个冗余规则块、统一 12 库 `--cat-color` 色板）；将 `build.py` / `post.py` / `seo.py` 改为显式模块调用并移除 `exec()` 胶水，新增离线构建与 CSP 回归测试接入 CI；四语 README 与高清截图全面翻新。
+
 ### 2026-11-24 · v1.3.2
 
 - 官方声明扩围：冒充名单新增 posewear.art（克隆本站并设登录与收费套餐）。重申：官方只有 posewear.pages.dev，免费、无需注册账号、没有收费套餐；凡是要登录、付费的「PoseWear」都是冒充。
@@ -69,6 +77,14 @@
 
 ## English
 
+### 2026-11-25 · v1.4.0
+
+- **Artist Lightbox Studio**: added 2× zoom & drag-to-pan (`Z` / double-click), horizontal mirror (`H`), rule-of-thirds and center-axis composition grids (`G`), grayscale luminance study (`B`), center-weighted 5-swatch auto color palette (click to copy `#HEX`), and live same-angle line-art × depth split compare (`V`).
+- **Fullscreen Gesture Drawing Studio**: launch distraction-free timed sessions from the current filtered gallery with `30s / 60s / 2m / 5m` timers, `5 / 10 / 20 / Endless` decks, optional chime, tab-switch timer guard, mirror / grid / grayscale / depth-flip tools, and a clickable session recap sheet.
+- **Creative Studio & Navigation Upgrades**: reference board cards now show send indices (`1/2/3`) and camera angles, with Shuffle, Clear with Undo, and **one-click high-DPI reference board PNG export**; added the global `⌘K` / `Ctrl+K` Command Palette with multilingual search across all 12 libraries and actions; added visual color swatch filters for outfits, plus mode filters, prompt/model search, and clickable reference thumbnails in Generation History.
+- **Vietnamese UI & README (`Tiếng Việt`)** (contributed by [@dung997tb](https://github.com/dung997tb) in #24): full coverage across all 774 UI dictionary keys, dynamic formatters, CSS status copy, 320px/390px mobile locale tests, and [README.vi.md](README.vi.md).
+- **Architecture Refactor & README Renovation**: consolidated registries into `src/catalog.js`, extracted `palette.js`, `sketch.js`, `command-palette.js`, and `board-export.js`, unpacked and formatted monolithic scripts, flattened `src/style.css` (−344 redundant blocks, unified `--cat-color` palette), replaced Python `exec()` glue in `build.py` / `post.py` / `seo.py` with explicit module calls and CI pipeline/CSP tests, and renovated all four READMEs with Retina screenshots.
+
 ### 2026-11-24 · v1.3.2
 
 - Impersonation notice expanded: posewear.art (a clone with sign-in and paid plans) is now named too. The only official site is posewear.pages.dev — free, with no accounts and no paid plans; any "PoseWear" asking you to sign in or pay is an impostor.
@@ -130,6 +146,14 @@
 <a id="ja"></a>
 
 ## 日本語
+
+### 2026-11-25 · v1.4.0
+
+- **作画向けプレビュービューア**：2× 拡大＆ドラッグ移動（`Z`／ダブルクリック）、左右反転（`H`）、三分割・中央赤軸構図ガイド（`G`）、グレースケール明度確認（`B`）、カラー写真からの中央重視 5 色自動パレット抽出（クリックで `#HEX` コピー）、同アングル線画 × 深度マップのリアルタイム重ね比較（`V`）を追加。
+- **全画面クロッキー練習（Gesture Studio）**：絞り込み中の素材集からそのまま集中練習を開始可能。`30s / 60s / 2m / 5m` タイマー、`5 / 10 / 20 / 無制限` 枚数、チャイム音、タブ切替時のタイマー保護、反転／ガイド／明度／深度切替、終了後のクリック可能な振り返り一覧を搭載。
+- **創作スタジオとナビゲーション強化**：リファレンスボードに送信番号（`1/2/3`）とアングルを表示し、「別の組み合わせ」、元に戻せる一括クリア、**高解像度ボード PNG 書き出し**に対応。どこからでも開ける `⌘K` / `Ctrl+K` コマンドパレット、衣装の色スウォッチ絞り込み、生成履歴のモード絞り込み・検索・使用参考画像サムネイルを追加。
+- **ベトナム語（Tiếng Việt）UI と README を追加**（[@dung997tb](https://github.com/dung997tb) による #24 コントリビュート）：全 774 件の UI 辞書、動的フォーマット、CSS 文言、320px/390px モバイル回帰テストおよび [README.vi.md](README.vi.md) を完全対応。
+- **アーキテクチャ刷新と README 全面改訂**：`src/catalog.js` への設定集約、`palette.js` / `sketch.js` / `command-palette.js` / `board-export.js` のモジュール分離とソース整形、`src/style.css` の平坦化・重複削減（−344 ブロック、`--cat-color` 統一）、`build.py` / `post.py` / `seo.py` の `exec()` 撤廃と CI ビルド／CSP テスト追加、4 言語 README と高解像度スクリーンショットを刷新。
 
 ### 2026-11-24 · v1.3.2
 
