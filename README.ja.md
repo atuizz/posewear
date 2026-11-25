@@ -17,7 +17,7 @@
 [![Live demo](https://img.shields.io/badge/demo-posewear.pages.dev-ff2442)](https://posewear.pages.dev)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=black)](https://github.com/atuizz/posewear/stargazers)
 
-[オンライン版](https://posewear.pages.dev/) · [简体中文](README.md) · [English](README.en.md) · [更新履歴](CHANGELOG.md)
+[オンライン版](https://posewear.pages.dev/) · [简体中文](README.md) · [English](README.en.md) · [Tiếng Việt](README.vi.md) · [更新履歴](CHANGELOG.md)
 
 </div>
 

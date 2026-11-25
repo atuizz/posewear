@@ -65,7 +65,7 @@ async function run() {
       assert.equal(await page.locator('footer #credits').count(),1);
       assert.ok(await page.locator('.credit-list').isHidden());
       const nav = page.locator('.tabs [data-tab=studio]');
-      for (const [locale,lang,label] of [['en','en','Studio'],['ja','ja','スタジオ'],['zh','zh-CN','工作台']]) {
+      for (const [locale,lang,label] of [['en','en','Studio'],['ja','ja','スタジオ'],['vi','vi','Studio'],['zh','zh-CN','工作台']]) {
         await chooseLocale(page,locale);
         assert.equal(await nav.innerText(),label);
         assert.equal(await description.textContent(),sample.zh);

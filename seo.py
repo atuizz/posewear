@@ -208,7 +208,7 @@ def featured(lang,n=12):return ''.join(cardli(lang,'costume',c) for c in SC[:n])
 catlinks=lambda lang:''.join(f'<li><a href="{"/en" if lang=="en" else ""}/{k}/{s}/">{E(z if lang=="zh" else e)}</a></li>' for k in ['pose','costume'] for s,z,e,L in CATS[k])
 en_desc=f"PoseWear: {len(SP)} pose sets ({NA_PUB} angle images), {len(SC):,} outfits, {len(SA):,} anime outfits and {len(SR):,} CC0 portraits, all with English and Chinese prompts — plus online AI try-on."
 ENLD=[{"@type":"WebSite","@id":SITE+'/en/#website',"url":SITE+'/en/',"name":"PoseWear","alternateName":"衣姿 PoseWear","inLanguage":"en","description":en_desc,"potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
- {"@type":"WebApplication","name":"PoseWear","url":SITE+'/en/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en","ja"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":en_desc}]
+ {"@type":"WebApplication","name":"PoseWear","url":SITE+'/en/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en","ja","vi"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":en_desc}]
 body=f'''<div class="wrap"><h1>Pose, outfit and portrait references with prompts</h1><p class="lead">{E(en_desc)} Favourite and combine references, copy prompts for Stable Diffusion or Midjourney, or upload your own photo to try an outfit on.</p>
 <p><a class="go" href="/#costume">Open the gallery</a><a class="go secondary" href="/#studio">Try on online</a></p>
 <section class="sec"><h2>Browse by category</h2><ul class="tg">{catlinks("en")}<li><a href="/en/portrait/">Portraits</a></li><li><a href="/en/anime/">Anime outfits</a></li><li><a href="/en/tag/">Outfit tags</a></li></ul></section>
@@ -231,7 +231,7 @@ idx=idx.replace('https://posewear.pages.dev/',SITE+'/')
 idx=idx.replace(f'<link rel="canonical" href="{SITE}/">',f'<link rel="canonical" href="{SITE}/">'+alts('/'))
 LD=[{"@type":"WebSite","@id":SITE+'/#website',"url":SITE+'/',"name":"衣姿 PoseWear","alternateName":["PoseWear","衣姿"],"inLanguage":"zh-CN","description":zh_desc,
   "potentialAction":{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":SITE+'/?t=costume&q={search_term_string}'},"query-input":"required name=search_term_string"}},
- {"@type":"WebApplication","name":"衣姿 PoseWear","url":SITE+'/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en","ja"],
+ {"@type":"WebApplication","name":"衣姿 PoseWear","url":SITE+'/',"applicationCategory":"DesignApplication","operatingSystem":"Any (web browser)","browserRequirements":"Requires JavaScript","inLanguage":["zh-CN","en","ja","vi"],
   "offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"description":zh_desc,"image":SITE+'/og.png',"isAccessibleForFree":True,"featureList":["姿势参考图（多角度）","服装穿搭参考图","人像脸模参考（CC0）","中英文提示词","在线 AI 试穿"]}]
 idx=idx.replace('</head>',f'<script type="application/ld+json">{json.dumps({"@context":"https://schema.org","@graph":LD},ensure_ascii=False,separators=(",",":"))}</script></head>',1)
 for key, catalog in [('depth',DJ),('exp',EXJ),('hair',HAJ),('dyn',DYJ),('scene',SCJ),('light',LIJ),('prop',PRJ),('furn',FUJ)]:

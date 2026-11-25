@@ -17,7 +17,7 @@ Twelve libraries — poses, outfits, portraits, expressions, and more — each w
 [![Live demo](https://img.shields.io/badge/demo-posewear.pages.dev-ff2442)](https://posewear.pages.dev)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=black)](https://github.com/atuizz/posewear/stargazers)
 
-[Live site](https://posewear.pages.dev/) · [简体中文](README.md) · [日本語](README.ja.md) · [Changelog](CHANGELOG.md)
+[Live site](https://posewear.pages.dev/) · [简体中文](README.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -41,7 +41,7 @@ Twelve libraries — poses, outfits, portraits, expressions, and more — each w
 <td><img src="docs/dark-en.jpg" alt="Dark mode"><br><sub>Dark mode, follows your system by default</sub></td>
 </tr></table>
 
-The interface speaks English, Chinese, and Japanese; reference descriptions switch between Chinese and English.
+The interface speaks English, Chinese, Japanese, and Vietnamese; reference descriptions switch between Chinese and English.
 
 ---
 
