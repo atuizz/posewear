@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const script = fileURLToPath(new URL('./build-post-regressions.py', import.meta.url));
-const python = process.env.PYTHON || 'python3';
+const python = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
 const result = spawnSync(python, [script], { stdio: 'inherit' });
 if (result.error) {
   console.error(result.error.message);
