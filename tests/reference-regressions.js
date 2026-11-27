@@ -35,7 +35,7 @@ async function run() {
     });
     await page.goto('https://posewear.test/#pose');
     const card=page.locator('#grid .card').first();
-    const clipboard=()=>page.evaluate(()=>navigator.clipboard.readText());
+    const clipboard=()=>page.evaluate(async()=>(await navigator.clipboard.readText()).replace(/\r\n/g,'\n'));
     async function copied(button) {
       await page.evaluate(()=>navigator.clipboard.writeText(''));
       await button.click();
