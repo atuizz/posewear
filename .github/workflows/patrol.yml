@@ -1,0 +1,53 @@
+name: Daily Patrol
+on:
+  schedule:
+    # Runs daily at 02:00 UTC (10:00 CST)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  live-and-community:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Check live site, proxy, catalogs and image hosts
+        run: |
+          {
+            echo "### Live Site Health"
+            echo '```'
+            node scripts/patrol-live.mjs
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Summarize open issues and pull requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "### Open Pull Requests"
+            prs=$(gh pr list --state open --limit 20 --json number,title,author,mergeable,updatedAt --jq '.[] | "- #\(.number) \(.title) (@\(.author.login), \(.mergeable), updated \(.updatedAt[:10]))"')
+            if [ -n "$prs" ]; then echo "$prs"; else echo "_None_"; fi
+            echo ""
+            echo "### Open Issues"
+            issues=$(gh issue list --state open --limit 20 --json number,title,author,updatedAt --jq '.[] | "- #\(.number) \(.title) (@\(.author.login), updated \(.updatedAt[:10]))"')
+            if [ -n "$issues" ]; then echo "$issues"; else echo "_None_"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  offline-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:offline

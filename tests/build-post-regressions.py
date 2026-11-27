@@ -29,17 +29,17 @@ def _check_static_invariants():
 
     # 2. Ensure exec() glue has been eliminated from build.py / post.py / seo.py
     for name in ('build.py', 'post.py', 'seo.py'):
-        text = (ROOT / name).read_text()
+        text = (ROOT / name).read_text(encoding='utf-8')
         _assert('exec(' not in text, f'{name} must not use exec() glue')
 
     # 3. Every local script/stylesheet referenced by src/index.html must be in post.CLIENT_FILES and src/sw.js
-    index_html = (ROOT / 'src/index.html').read_text()
+    index_html = (ROOT / 'src/index.html').read_text(encoding='utf-8')
     referenced = set(re.findall(r'<script\b[^>]*\bsrc="([^":/]+\.js)"', index_html))
     referenced |= set(re.findall(r'<link\b[^>]*\brel="stylesheet"[^>]*\bhref="([^":/]+\.css)"', index_html))
     client_set = set(post.CLIENT_FILES)
     _assert(referenced == client_set, f'CLIENT_FILES mismatch with src/index.html: missing={referenced - client_set}, extra={client_set - referenced}')
 
-    sw_text = (ROOT / 'src/sw.js').read_text()
+    sw_text = (ROOT / 'src/sw.js').read_text(encoding='utf-8')
     sw_precache = set(re.findall(r"'([^']+\.(?:js|css))'", sw_text))
     _assert(client_set <= sw_precache, f'src/sw.js PRECACHE missing client files: {client_set - sw_precache}')
 
@@ -262,14 +262,14 @@ def _run_pipeline_regression():
             _assert(not (dist / name).exists(), f'Unhashed file was not removed: {name}')
 
         # 3. Compiled app.js matches catalog-source.mjs discovery contracts
-        app_js = (dist / assets['app.js']).read_text()
+        app_js = (dist / assets['app.js']).read_text(encoding='utf-8')
         _assert("const AH='https://pwimg.0vo.pro/';" in app_js, 'AH asset host injection failed')
         discovered = set(re.findall(r'["\'](?:/assets/)?([a-z]+)\.[a-f0-9]{10}\.json["\']', app_js))
         expected_catalogs = {f.removesuffix('.json') for f in post.CATALOG_FILES}
         _assert(discovered == expected_catalogs, f'app.js catalog discovery mismatch: {expected_catalogs - discovered}')
 
         # 4. index.html references all hashed client files, stats, SSR cards, footer index, WA beacon
-        idx = (dist / 'index.html').read_text()
+        idx = (dist / 'index.html').read_text(encoding='utf-8')
         for name in post.CLIENT_FILES:
             _assert(f'"/{assets[name]}"' in idx, f'index.html missing hashed reference for {name}')
         _assert('data-stat="pose" data-n="1" data-na="2"' in idx, 'pose stat counter mismatch')
@@ -279,13 +279,13 @@ def _run_pipeline_regression():
         _assert('data-cf-beacon=\'{"token": "test-wa-token-123"}\'' in idx, 'Web Analytics beacon missing')
 
         # 5. Service Worker precache updated with hashed files
-        sw = (dist / 'sw.js').read_text()
+        sw = (dist / 'sw.js').read_text(encoding='utf-8')
         _assert("'posewear-development'" not in sw, 'sw.js version was not fingerprinted')
         for name in post.CLIENT_FILES + ['poses.json', 'depths.json']:
             _assert(f'"/{assets[name]}"' in sw, f'sw.js PRECACHE missing {name}')
 
         # 6. _headers CSP allows WA beacon, hotlinks, asset host, and loopback http
-        headers = (dist / '_headers').read_text()
+        headers = (dist / '_headers').read_text(encoding='utf-8')
         for token in (
             'https://static.cloudflareinsights.com',
             'https://pwimg.0vo.pro',
@@ -329,9 +329,9 @@ def _run_pipeline_regression():
         # CharaDB hotlink anime outfit must NOT generate static detail page
         _assert(not (dist / 'anime/cdb_001/index.html').exists(), 'External hotlink anime item leaked into static detail page')
 
-        key = (tmp_path / 'indexnow.key').read_text().strip()
-        _assert((dist / f'{key}.txt').read_text().strip() == key, 'IndexNow key file mismatch')
-        _assert((tmp_path / 'urls.txt').read_text().strip().splitlines(), 'urls.txt is empty')
+        key = (tmp_path / 'indexnow.key').read_text(encoding='utf-8').strip()
+        _assert((dist / f'{key}.txt').read_text(encoding='utf-8').strip() == key, 'IndexNow key file mismatch')
+        _assert((tmp_path / 'urls.txt').read_text(encoding='utf-8').strip().splitlines(), 'urls.txt is empty')
 
 
 if __name__ == '__main__':
