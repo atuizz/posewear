@@ -35,7 +35,8 @@ async function run() {
     });
     await page.goto('https://posewear.test/#pose');
     const card=page.locator('#grid .card').first();
-    const clipboard=()=>page.evaluate(()=>navigator.clipboard.readText());
+    // Windows 系统剪贴板把 \n 写成 \r\n：读取处归一，断言保持平台无关
+    const clipboard=()=>page.evaluate(async()=>(await navigator.clipboard.readText()).replace(/\r\n/g,'\n'));
     async function copied(button) {
       await page.evaluate(()=>navigator.clipboard.writeText(''));
       await button.click();
