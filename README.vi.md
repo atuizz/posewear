@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=flat)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=111111)](https://github.com/atuizz/posewear/stargazers)
 
-**[Dùng trực tuyến](https://posewear.pages.dev/)** · [Điểm nổi bật](#điểm-nổi-bật) · [12 thư viện](#tổng-quan-12-thư-viện) · [Cách tạo ảnh](#ba-cách-tạo-ảnh) · [Chạy cục bộ](#chạy-cục-bộ) · [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Nhật ký thay đổi](CHANGELOG.md)
+**[Dùng trực tuyến](https://posewear.pages.dev/)** · [Điểm nổi bật](#điểm-nổi-bật) · [12 thư viện](#tổng-quan-12-thư-viện) · [Cách tạo ảnh](#ba-cách-tạo-ảnh) · [Chạy cục bộ](#chạy-cục-bộ) · [简体中文](README.md) · [English](README.en.md) · [日本語](README.ja.md) · [Türkçe](README.tr.md) · [Nhật ký thay đổi](CHANGELOG.md)
 
 <br>
 

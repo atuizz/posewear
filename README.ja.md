@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=flat)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=111111)](https://github.com/atuizz/posewear/stargazers)
 
-**[オンライン版](https://posewear.pages.dev/)** · [主な特徴](#主な特徴) · [素材集一覧](#12-の素材集一覧) · [生成方法](#選べる-3-つの生成方法) · [ローカル起動](#ローカルで動かす) · [简体中文](README.md) · [English](README.en.md) · [Tiếng Việt](README.vi.md) · [更新履歴](CHANGELOG.md)
+**[オンライン版](https://posewear.pages.dev/)** · [主な特徴](#主な特徴) · [素材集一覧](#12-の素材集一覧) · [生成方法](#選べる-3-つの生成方法) · [ローカル起動](#ローカルで動かす) · [简体中文](README.md) · [English](README.en.md) · [Tiếng Việt](README.vi.md) · [Türkçe](README.tr.md) · [更新履歴](CHANGELOG.md)
 
 <br>
 
