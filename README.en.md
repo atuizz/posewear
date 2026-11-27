@@ -16,7 +16,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111?style=flat)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/atuizz/posewear?style=flat&color=111111)](https://github.com/atuizz/posewear/stargazers)
 
-**[Live Site](https://posewear.pages.dev/)** · [Highlights](#highlights) · [Libraries](#twelve-libraries-at-a-glance) · [Generation Modes](#three-ways-to-generate) · [Run Locally](#run-locally) · [简体中文](README.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [Changelog](CHANGELOG.md)
+**[Live Site](https://posewear.pages.dev/)** · [Highlights](#highlights) · [Libraries](#twelve-libraries-at-a-glance) · [Generation Modes](#three-ways-to-generate) · [Run Locally](#run-locally) · [简体中文](README.md) · [日本語](README.ja.md) · [Tiếng Việt](README.vi.md) · [Türkçe](README.tr.md) · [Changelog](CHANGELOG.md)
 
 <br>
 

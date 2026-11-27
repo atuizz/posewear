@@ -1662,6 +1662,10 @@ html:lang(vi) .ph.err::after {
   content: "Không tải được ảnh · Thử lại";
 }
 
+html:lang(tr) .ph.err::after {
+  content: "Görsel yüklenemedi · Tekrar dene";
+}
+
 .ph.depth.err {
   background: #141414;
 }
@@ -5118,6 +5122,10 @@ html:lang(vi) .st-r .hl:empty::before {
   content: "Ảnh đã tạo được lưu tại đây trên thiết bị này.";
 }
 
+html:lang(tr) .st-r .hl:empty::before {
+  content: "Oluşturulan görseller bu cihazda burada saklanır.";
+}
+
 .hl button {
   position: relative;
   flex: none;
@@ -7241,7 +7249,8 @@ a.hlb-ref:hover {
   .tgen-row { flex-wrap: wrap; }
   html:lang(en) .studio-head .modes button,
   html:lang(ja) .studio-head .modes button,
-  html:lang(vi) .studio-head .modes button { white-space: normal; }
+  html:lang(vi) .studio-head .modes button,
+  html:lang(tr) .studio-head .modes button { white-space: normal; }
 }
 
 @media (max-width: 390px) {
@@ -7330,6 +7339,8 @@ a.hlb-ref:hover {
   html:lang(ja) .ph.depth .card-flip .flip-hint::after { content: "線画"; }
   html:lang(vi) .card-flip .flip-hint::after { content: "Độ sâu"; }
   html:lang(vi) .ph.depth .card-flip .flip-hint::after { content: "Phác thảo"; }
+  html:lang(tr) .card-flip .flip-hint::after { content: "Derinlik"; }
+  html:lang(tr) .ph.depth .card-flip .flip-hint::after { content: "Çizgi"; }
 }
 
 @media (hover: none) {
